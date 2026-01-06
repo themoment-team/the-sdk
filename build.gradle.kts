@@ -1,10 +1,12 @@
 plugins {
+    kotlin("jvm") version "2.1.10"
+    kotlin("plugin.spring") version "2.1.0"
     `java-library`
     `maven-publish`
 }
 
 group = "team.themoment"
-version = "1.0"
+version = "1.0-M1"
 
 java {
     toolchain {
@@ -21,6 +23,25 @@ repositories {
 }
 
 dependencies {
+    // Kotlin
+    implementation("org.jetbrains.kotlin:kotlin-reflect")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib")
+
+    // Spring Boot
+    implementation("org.springframework.boot:spring-boot-starter-web:3.4.1")
+    implementation("org.springframework.boot:spring-boot-autoconfigure:3.4.1")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor:3.4.1")
+
+    // Swagger/OpenAPI
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15")
+
+    // Jackson
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
+
+    // Logging
+    implementation("org.slf4j:slf4j-api:2.0.16")
+
+    // Testing
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
