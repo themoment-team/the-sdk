@@ -1,0 +1,36 @@
+# The SDK Configuration Example
+# Copy this file to your Spring Boot project's application.yml
+
+sdk:
+  # Logging Filter Configuration
+  logging:
+    enabled: true  # Enable/disable logging filter (default: true)
+    not-logging-urls:  # URLs to exclude from logging
+      - "/v3/api-docs/**"
+      - "/swagger-ui/**"
+      - "/actuator/**"
+
+  # Response Wrapper Configuration
+  response:
+    enabled: true  # Enable/disable response wrapper (default: true)
+    not-wrapping-urls:  # URLs to exclude from response wrapping
+      - "/v3/api-docs/**"
+      - "/v3/api-docs"
+      - "/swagger-ui/**"
+      - "/actuator/**"
+
+  # Swagger Configuration
+  swagger:
+    enabled: true  # Enable/disable swagger configuration (default: true)
+    title: "My API Documentation"
+    description: "API Documentation for My Service"
+    version: "v1"
+    group: "My API"
+    paths-to-match:
+      - "/v1/**"
+      - "/api/**"
+
+  # Exception Handler Configuration
+  exception:
+    enabled: true  # Enable/disable exception handler (default: true)
+    use-english-message: true  # true: English, false: Korean (default: true)
