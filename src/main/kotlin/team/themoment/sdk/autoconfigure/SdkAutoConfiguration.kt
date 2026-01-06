@@ -4,7 +4,6 @@ import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
-import org.springframework.web.bind.annotation.RestControllerAdvice
 import team.themoment.sdk.config.ExceptionProperties
 import team.themoment.sdk.config.LoggingProperties
 import team.themoment.sdk.config.ResponseProperties
@@ -35,7 +34,6 @@ class SdkAutoConfiguration {
     }
 
     @Bean
-    @RestControllerAdvice
     @ConditionalOnProperty(
         prefix = "sdk.response",
         name = ["enabled"],
@@ -58,7 +56,6 @@ class SdkAutoConfiguration {
     }
 
     @Bean
-    @RestControllerAdvice
     @ConditionalOnProperty(
         prefix = "sdk.exception",
         name = ["enabled"],

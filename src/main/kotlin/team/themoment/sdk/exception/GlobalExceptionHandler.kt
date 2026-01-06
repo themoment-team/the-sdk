@@ -3,11 +3,11 @@ package team.themoment.sdk.exception
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.servlet.config.annotation.EnableWebMvc
+import org.springframework.web.bind.annotation.RestControllerAdvice
 import team.themoment.sdk.config.ExceptionProperties
 import team.themoment.sdk.response.CommonApiResponse
 
-@EnableWebMvc
+@RestControllerAdvice
 class GlobalExceptionHandler(
     private val exceptionProperties: ExceptionProperties
 ) {

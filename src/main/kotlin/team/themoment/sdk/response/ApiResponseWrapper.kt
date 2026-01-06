@@ -8,9 +8,11 @@ import org.springframework.http.converter.HttpMessageConverter
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
 import org.springframework.util.AntPathMatcher
+import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice
 import team.themoment.sdk.config.ResponseProperties
 
+@RestControllerAdvice
 class ApiResponseWrapper(
     private val responseProperties: ResponseProperties
 ) : ResponseBodyAdvice<Any> {
