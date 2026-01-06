@@ -1,19 +1,19 @@
 # The SDK
 
-Modular SDK for reusable Spring Boot components.
+재사용 가능한 Spring Boot 컴포넌트를 위한 모듈형 SDK입니다.
 
-## Features
+## 주요 기능
 
-- **Logging Filter**: Automatic HTTP request/response logging with customizable exclusion patterns
-- **Response Wrapper**: Automatic API response wrapping with consistent format
-- **Swagger Configuration**: Pre-configured Swagger/OpenAPI documentation
-- **Exception Handler**: Global exception handling with English/Korean message support
+- **로깅 필터**: HTTP 요청/응답 자동 로깅 및 커스텀 제외 패턴 지원
+- **응답 래퍼**: 일관된 형식의 API 응답 자동 래핑
+- **Swagger 설정**: 사전 구성된 Swagger/OpenAPI 문서화
+- **예외 핸들러**: 영어/한국어 메시지 지원 글로벌 예외 처리
 
-## Installation
+## 설치
 
-### Using JitPack
+### JitPack 사용
 
-Add the JitPack repository to your `build.gradle.kts`:
+`build.gradle.kts`에 JitPack 저장소를 추가하세요:
 
 ```kotlin
 repositories {
@@ -25,55 +25,55 @@ dependencies {
 }
 ```
 
-## Configuration
+## 설정
 
-All features are auto-configured and enabled by default. You can customize them in your `application.yml`:
+모든 기능은 기본적으로 자동 구성되고 활성화됩니다. `application.yml`에서 커스터마이징할 수 있습니다:
 
 ```yaml
 sdk:
   logging:
-    enabled: true
-    not-logging-urls:
+    enabled: true  # 로깅 필터 활성화 여부
+    not-logging-urls:  # 로깅 제외 URL 패턴
       - "/v3/api-docs/**"
       - "/swagger-ui/**"
 
   response:
-    enabled: true
-    not-wrapping-urls:
+    enabled: true  # 응답 래퍼 활성화 여부
+    not-wrapping-urls:  # 래핑 제외 URL 패턴
       - "/v3/api-docs/**"
 
   swagger:
-    enabled: true
-    title: "My API"
-    description: "API Documentation"
-    version: "v1"
-    group: "API"
-    paths-to-match:
+    enabled: true  # Swagger 활성화 여부
+    title: "My API"  # API 제목
+    description: "API Documentation"  # API 설명
+    version: "v1"  # API 버전
+    group: "API"  # API 그룹명
+    paths-to-match:  # 문서화할 경로 패턴
       - "/v1/**"
 
   exception:
-    enabled: true
-    use-english-message: true  # true: English, false: Korean
+    enabled: true  # 예외 핸들러 활성화 여부
+    use-english-message: true  # true: 영어, false: 한국어
 ```
 
-## Usage
+## 사용법
 
-### Response Wrapper
+### 응답 래퍼
 
-The SDK automatically wraps your API responses in a consistent format:
+SDK는 자동으로 API 응답을 일관된 형식으로 래핑합니다:
 
 ```kotlin
 @RestController
 class MyController {
     @GetMapping("/users")
     fun getUsers(): List<User> {
-        // Returns: CommonApiResponse<List<User>>
+        // 반환 타입: CommonApiResponse<List<User>>
         return userService.findAll()
     }
 }
 ```
 
-Response format:
+응답 형식:
 ```json
 {
   "status": "OK",
@@ -83,9 +83,9 @@ Response format:
 }
 ```
 
-### Exception Handling
+### 예외 처리
 
-Use `ExpectedException` for business logic errors:
+비즈니스 로직 오류에는 `ExpectedException`을 사용하세요:
 
 ```kotlin
 import team.themoment.sdk.exception.ExpectedException
@@ -96,19 +96,25 @@ if (user == null) {
 }
 ```
 
-### Manual Response Control
+한국어 메시지 사용 시 (`use-english-message: false`):
+```kotlin
+// 상태 코드에 해당하는 기본 한국어 메시지가 자동으로 적용됩니다
+throw ExpectedException(HttpStatus.NOT_FOUND)  // "요청한 리소스를 찾을 수 없습니다"
+```
 
-If you want to control the response format manually:
+### 수동 응답 제어
+
+응답 형식을 직접 제어하고 싶다면:
 
 ```kotlin
 import team.themoment.sdk.response.CommonApiResponse
 
 @GetMapping("/custom")
 fun custom(): CommonApiResponse<String> {
-    return CommonApiResponse.success("Custom message", "data")
+    return CommonApiResponse.success("커스텀 메시지", "데이터")
 }
 ```
 
-## License
+## 라이선스
 
-MIT License - see LICENSE file for details
+MIT License - 자세한 내용은 LICENSE 파일을 참조하세요
