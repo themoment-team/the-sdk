@@ -1,12 +1,12 @@
 plugins {
-    kotlin("jvm") version "2.1.10"
-    kotlin("plugin.spring") version "2.1.0"
-    `java-library`
-    `maven-publish`
+    id("org.jetbrains.kotlin.jvm") version "2.1.10"
+    id("org.jetbrains.kotlin.plugin.spring") version "2.1.10"
+    id("java-library")
+    id("maven-publish")
 }
 
 group = "team.themoment"
-version = "1.0-M1"
+version = "1.0-M6"
 
 java {
     toolchain {
