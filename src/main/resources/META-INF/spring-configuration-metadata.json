@@ -1,0 +1,102 @@
+{
+  "groups": [
+    {
+      "name": "sdk.logging",
+      "type": "team.themoment.sdk.config.LoggingProperties",
+      "sourceType": "team.themoment.sdk.config.LoggingProperties",
+      "description": "로깅 필터 설정"
+    },
+    {
+      "name": "sdk.response",
+      "type": "team.themoment.sdk.config.ResponseProperties",
+      "sourceType": "team.themoment.sdk.config.ResponseProperties",
+      "description": "응답 래퍼 설정"
+    },
+    {
+      "name": "sdk.swagger",
+      "type": "team.themoment.sdk.config.SwaggerProperties",
+      "sourceType": "team.themoment.sdk.config.SwaggerProperties",
+      "description": "Swagger/OpenAPI 설정"
+    },
+    {
+      "name": "sdk.exception",
+      "type": "team.themoment.sdk.config.ExceptionProperties",
+      "sourceType": "team.themoment.sdk.config.ExceptionProperties",
+      "description": "예외 핸들러 설정"
+    }
+  ],
+  "properties": [
+    {
+      "name": "sdk.logging.enabled",
+      "type": "java.lang.Boolean",
+      "description": "로깅 필터 활성화 여부",
+      "defaultValue": true
+    },
+    {
+      "name": "sdk.logging.not-logging-urls",
+      "type": "java.util.List<java.lang.String>",
+      "description": "로깅에서 제외할 URL 패턴 목록 (Ant 스타일)",
+      "defaultValue": ["/v3/api-docs/**", "/swagger-ui/**"]
+    },
+    {
+      "name": "sdk.response.enabled",
+      "type": "java.lang.Boolean",
+      "description": "응답 래퍼 활성화 여부",
+      "defaultValue": true
+    },
+    {
+      "name": "sdk.response.not-wrapping-urls",
+      "type": "java.util.List<java.lang.String>",
+      "description": "응답 래핑에서 제외할 URL 패턴 목록 (Ant 스타일)",
+      "defaultValue": ["/v3/api-docs/**", "/v3/api-docs", "/swagger-ui/**"]
+    },
+    {
+      "name": "sdk.swagger.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Swagger 설정 활성화 여부",
+      "defaultValue": true
+    },
+    {
+      "name": "sdk.swagger.title",
+      "type": "java.lang.String",
+      "description": "API 문서 제목",
+      "defaultValue": "API Documentation"
+    },
+    {
+      "name": "sdk.swagger.description",
+      "type": "java.lang.String",
+      "description": "API 문서 설명",
+      "defaultValue": "API Documentation"
+    },
+    {
+      "name": "sdk.swagger.version",
+      "type": "java.lang.String",
+      "description": "API 버전",
+      "defaultValue": "v1"
+    },
+    {
+      "name": "sdk.swagger.group",
+      "type": "java.lang.String",
+      "description": "API 그룹명",
+      "defaultValue": "API"
+    },
+    {
+      "name": "sdk.swagger.paths-to-match",
+      "type": "java.util.List<java.lang.String>",
+      "description": "문서화할 경로 패턴 목록",
+      "defaultValue": ["/v1/**"]
+    },
+    {
+      "name": "sdk.exception.enabled",
+      "type": "java.lang.Boolean",
+      "description": "예외 핸들러 활성화 여부",
+      "defaultValue": true
+    },
+    {
+      "name": "sdk.exception.use-english-message",
+      "type": "java.lang.Boolean",
+      "description": "예외 메시지 언어 설정 (true: 영어, false: 한국어)",
+      "defaultValue": true
+    }
+  ]
+}
