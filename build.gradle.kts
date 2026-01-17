@@ -3,10 +3,11 @@ plugins {
     id("org.jetbrains.kotlin.plugin.spring") version "2.1.10"
     id("java-library")
     id("maven-publish")
+    id("org.jlleitschuh.gradle.ktlint") version "14.0.1"
 }
 
 group = "team.themoment"
-version = "1.0-RC11"
+version = "1.0"
 
 java {
     toolchain {
