@@ -6,6 +6,8 @@ import io.swagger.v3.oas.models.Operation
 import io.swagger.v3.oas.models.media.Schema
 import org.springdoc.core.customizers.OperationCustomizer
 import org.springdoc.core.models.GroupedOpenApi
+import org.springframework.util.AntPathMatcher
+import team.themoment.sdk.config.ResponseProperties
 import team.themoment.sdk.config.SwaggerProperties
 import team.themoment.sdk.response.CommonApiResponse
 
@@ -18,8 +20,11 @@ import team.themoment.sdk.response.CommonApiResponse
         ),
 )
 class SwaggerConfig(
-    private val swaggerProperties: SwaggerProperties
+    private val swaggerProperties: SwaggerProperties,
+    private val responseProperties: ResponseProperties,
 ) {
+    private val matcher = AntPathMatcher()
+
     fun api(): GroupedOpenApi =
         GroupedOpenApi
             .builder()
@@ -30,6 +35,18 @@ class SwaggerConfig(
 
     private fun customOperationCustomizer(): OperationCustomizer =
         OperationCustomizer { operation, handlerMethod ->
+            if (!responseProperties.enabled) {
+                return@OperationCustomizer operation
+            }
+
+            val operationPath = operation.operationId?.let {
+                swaggerProperties.pathsToMatch.firstOrNull()?.replace("**", "")?.plus(it.substringAfter("_"))
+            } ?: ""
+
+            if (isNotWrappingURL(operationPath)) {
+                return@OperationCustomizer operation
+            }
+
             val returnType = handlerMethod.method.returnType
             val hideDataField = CommonApiResponse::class.java.isAssignableFrom(returnType)
             addResponseBodyWrapperSchemaExample(operation, hideDataField)
@@ -60,5 +77,10 @@ class SwaggerConfig(
             if (!hideDataField) {
                 addProperty("data", originalSchema)
             }
+        }
+
+    private fun isNotWrappingURL(requestURI: String): Boolean =
+        responseProperties.notWrappingUrls.any { pattern ->
+            matcher.match(pattern, requestURI)
         }
 }

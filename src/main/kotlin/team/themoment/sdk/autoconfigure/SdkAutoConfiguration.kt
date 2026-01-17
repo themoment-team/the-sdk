@@ -51,8 +51,22 @@ class SdkAutoConfiguration {
         havingValue = "true",
         matchIfMissing = true
     )
-    fun swaggerConfig(swaggerProperties: SwaggerProperties): SwaggerConfig {
-        return SwaggerConfig(swaggerProperties)
+    fun swaggerConfig(
+        swaggerProperties: SwaggerProperties,
+        responseProperties: ResponseProperties
+    ): SwaggerConfig {
+        return SwaggerConfig(swaggerProperties, responseProperties)
+    }
+
+    @Bean
+    @ConditionalOnProperty(
+        prefix = "sdk.swagger",
+        name = ["enabled"],
+        havingValue = "true",
+        matchIfMissing = true
+    )
+    fun groupedOpenApi(swaggerConfig: SwaggerConfig): org.springdoc.core.models.GroupedOpenApi {
+        return swaggerConfig.api()
     }
 
     @Bean
