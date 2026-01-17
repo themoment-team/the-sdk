@@ -7,6 +7,8 @@ import io.swagger.v3.oas.models.media.Schema
 import org.springdoc.core.customizers.OperationCustomizer
 import org.springdoc.core.models.GroupedOpenApi
 import org.springframework.util.AntPathMatcher
+import org.springframework.web.bind.annotation.*
+import org.springframework.web.method.HandlerMethod
 import team.themoment.sdk.config.ResponseProperties
 import team.themoment.sdk.config.SwaggerProperties
 import team.themoment.sdk.response.CommonApiResponse
@@ -39,11 +41,8 @@ class SwaggerConfig(
                 return@OperationCustomizer operation
             }
 
-            val operationPath = operation.operationId?.let {
-                swaggerProperties.pathsToMatch.firstOrNull()?.replace("**", "")?.plus(it.substringAfter("_"))
-            } ?: ""
-
-            if (isNotWrappingURL(operationPath)) {
+            val requestPath = getRequestPath(handlerMethod)
+            if (isNotWrappingURL(requestPath)) {
                 return@OperationCustomizer operation
             }
 
@@ -78,6 +77,30 @@ class SwaggerConfig(
                 addProperty("data", originalSchema)
             }
         }
+
+    private fun getRequestPath(handlerMethod: HandlerMethod): String {
+        val method = handlerMethod.method
+        val methodPath = sequenceOf(
+            method.getAnnotation(RequestMapping::class.java)?.value,
+            method.getAnnotation(RequestMapping::class.java)?.path,
+            method.getAnnotation(GetMapping::class.java)?.value,
+            method.getAnnotation(GetMapping::class.java)?.path,
+            method.getAnnotation(PostMapping::class.java)?.value,
+            method.getAnnotation(PostMapping::class.java)?.path,
+            method.getAnnotation(PutMapping::class.java)?.value,
+            method.getAnnotation(PutMapping::class.java)?.path,
+            method.getAnnotation(DeleteMapping::class.java)?.value,
+            method.getAnnotation(DeleteMapping::class.java)?.path,
+            method.getAnnotation(PatchMapping::class.java)?.value,
+            method.getAnnotation(PatchMapping::class.java)?.path
+        ).firstNotNullOfOrNull { it?.firstOrNull() } ?: ""
+        val classPathArray = handlerMethod.beanType.getAnnotation(RequestMapping::class.java)?.value
+            ?: handlerMethod.beanType.getAnnotation(RequestMapping::class.java)?.path
+            ?: emptyArray()
+        val classPath = classPathArray.firstOrNull() ?: ""
+
+        return "$classPath$methodPath"
+    }
 
     private fun isNotWrappingURL(requestURI: String): Boolean =
         responseProperties.notWrappingUrls.any { pattern ->
