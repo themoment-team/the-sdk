@@ -51,11 +51,8 @@ class SdkAutoConfiguration {
         havingValue = "true",
         matchIfMissing = true
     )
-    fun swaggerConfig(
-        swaggerProperties: SwaggerProperties,
-        responseProperties: ResponseProperties
-    ): SwaggerConfig {
-        return SwaggerConfig(swaggerProperties, responseProperties)
+    fun swaggerConfig(swaggerProperties: SwaggerProperties): SwaggerConfig {
+        return SwaggerConfig(swaggerProperties)
     }
 
     @Bean
