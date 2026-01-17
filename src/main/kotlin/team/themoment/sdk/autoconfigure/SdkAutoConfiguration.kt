@@ -20,16 +20,15 @@ import team.themoment.sdk.swagger.SwaggerConfig
     LoggingProperties::class,
     ResponseProperties::class,
     SwaggerProperties::class,
-    ExceptionProperties::class
+    ExceptionProperties::class,
 )
 class SdkAutoConfiguration {
-
     @Configuration
     @ConditionalOnProperty(
         prefix = "sdk.swagger",
         name = ["enabled"],
         havingValue = "true",
-        matchIfMissing = true
+        matchIfMissing = true,
     )
     @Import(SwaggerConfig::class)
     class SwaggerAutoConfiguration
@@ -39,31 +38,26 @@ class SdkAutoConfiguration {
         prefix = "sdk.logging",
         name = ["enabled"],
         havingValue = "true",
-        matchIfMissing = true
+        matchIfMissing = true,
     )
-    fun loggingFilter(loggingProperties: LoggingProperties): LoggingFilter {
-        return LoggingFilter(loggingProperties)
-    }
+    fun loggingFilter(loggingProperties: LoggingProperties): LoggingFilter = LoggingFilter(loggingProperties)
 
     @Bean
     @ConditionalOnProperty(
         prefix = "sdk.response",
         name = ["enabled"],
         havingValue = "true",
-        matchIfMissing = true
+        matchIfMissing = true,
     )
-    fun apiResponseWrapper(responseProperties: ResponseProperties): ApiResponseWrapper {
-        return ApiResponseWrapper(responseProperties)
-    }
+    fun apiResponseWrapper(responseProperties: ResponseProperties): ApiResponseWrapper = ApiResponseWrapper(responseProperties)
 
     @Bean
     @ConditionalOnProperty(
         prefix = "sdk.exception",
         name = ["enabled"],
         havingValue = "true",
-        matchIfMissing = true
+        matchIfMissing = true,
     )
-    fun globalExceptionHandler(exceptionProperties: ExceptionProperties): GlobalExceptionHandler {
-        return GlobalExceptionHandler(exceptionProperties)
-    }
+    fun globalExceptionHandler(exceptionProperties: ExceptionProperties): GlobalExceptionHandler =
+        GlobalExceptionHandler(exceptionProperties)
 }

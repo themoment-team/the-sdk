@@ -15,9 +15,8 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 class LoggingFilter(
-    private val loggingProperties: LoggingProperties
+    private val loggingProperties: LoggingProperties,
 ) : OncePerRequestFilter() {
-
     private val logger = LoggerFactory.getLogger(LoggingFilter::class.java)
     private val matcher = AntPathMatcher()
 
@@ -110,8 +109,7 @@ class LoggingFilter(
     private fun isNotLoggingURL(requestURI: String): Boolean =
         loggingProperties.notLoggingUrls.any { pattern -> matcher.match(pattern, requestURI) }
 
-    private fun isMultipart(request: HttpServletRequest): Boolean =
-        request.contentType?.lowercase()?.startsWith("multipart/") ?: false
+    private fun isMultipart(request: HttpServletRequest): Boolean = request.contentType?.lowercase()?.startsWith("multipart/") ?: false
 
     private fun requestLogging(
         request: HttpServletRequest,
@@ -178,6 +176,5 @@ class LoggingFilter(
         return if (StringUtils.hasText(oneLineContent)) oneLineContent else "[empty]"
     }
 
-    private fun formatCookies(cookies: Array<Cookie>?): String =
-        cookies?.joinToString(", ") { "${it.name}=${it.value}" } ?: "[none]"
+    private fun formatCookies(cookies: Array<Cookie>?): String = cookies?.joinToString(", ") { "${it.name}=${it.value}" } ?: "[none]"
 }

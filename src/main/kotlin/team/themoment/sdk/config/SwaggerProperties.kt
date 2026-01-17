@@ -8,5 +8,5 @@ data class SwaggerProperties(
     val description: String = "API Documentation",
     val version: String = "v1",
     val group: String = "API",
-    val pathsToMatch: List<String> = listOf("/v1/**")
+    val pathsToMatch: List<String> = listOf("/v1/**"),
 )

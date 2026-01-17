@@ -4,5 +4,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "sdk.exception")
 data class ExceptionProperties(
-    val useEnglishMessage: Boolean = true
+    val useEnglishMessage: Boolean = true,
 )

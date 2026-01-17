@@ -14,9 +14,8 @@ import team.themoment.sdk.config.ResponseProperties
 
 @RestControllerAdvice
 class ApiResponseWrapper(
-    private val responseProperties: ResponseProperties
+    private val responseProperties: ResponseProperties,
 ) : ResponseBodyAdvice<Any> {
-
     private val matcher = AntPathMatcher()
 
     override fun supports(
