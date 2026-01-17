@@ -6,7 +6,6 @@ import io.swagger.v3.oas.models.Operation
 import io.swagger.v3.oas.models.media.Schema
 import org.springdoc.core.customizers.OperationCustomizer
 import org.springdoc.core.models.GroupedOpenApi
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import team.themoment.sdk.config.SwaggerProperties
@@ -21,12 +20,6 @@ import team.themoment.sdk.response.CommonApiResponse
         ),
 )
 @Configuration
-@ConditionalOnProperty(
-    prefix = "sdk.swagger",
-    name = ["enabled"],
-    havingValue = "true",
-    matchIfMissing = true
-)
 class SwaggerConfig(
     private val swaggerProperties: SwaggerProperties,
 ) {
