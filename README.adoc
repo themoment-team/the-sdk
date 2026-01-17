@@ -27,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.themoment-team:the-sdk:1.0-RC3")
+    implementation("com.github.themoment-team:the-sdk:1.0-RC4")
 }
 ----
 
