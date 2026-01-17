@@ -1,5 +1,9 @@
 package team.themoment.sdk.autoconfigure
 
+import io.swagger.v3.oas.models.Operation
+import io.swagger.v3.oas.models.media.Schema
+import org.springdoc.core.customizers.OperationCustomizer
+import org.springdoc.core.models.GroupedOpenApi
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -11,7 +15,7 @@ import team.themoment.sdk.config.SwaggerProperties
 import team.themoment.sdk.exception.GlobalExceptionHandler
 import team.themoment.sdk.logging.LoggingFilter
 import team.themoment.sdk.response.ApiResponseWrapper
-import team.themoment.sdk.swagger.SwaggerConfig
+import team.themoment.sdk.response.CommonApiResponse
 
 @AutoConfiguration
 @EnableConfigurationProperties(
@@ -51,9 +55,14 @@ class SdkAutoConfiguration {
         havingValue = "true",
         matchIfMissing = true
     )
-    fun swaggerConfig(swaggerProperties: SwaggerProperties): SwaggerConfig {
-        return SwaggerConfig(swaggerProperties)
-    }
+    fun operationCustomizer(): OperationCustomizer =
+        OperationCustomizer { operation, handlerMethod ->
+            val returnType = handlerMethod.method.returnType
+            val hideDataField = CommonApiResponse::class.java.isAssignableFrom(returnType)
+            addResponseBodyWrapperSchemaExample(operation, hideDataField)
+
+            operation
+        }
 
     @Bean
     @ConditionalOnProperty(
@@ -62,9 +71,41 @@ class SdkAutoConfiguration {
         havingValue = "true",
         matchIfMissing = true
     )
-    fun groupedOpenApi(swaggerConfig: SwaggerConfig): org.springdoc.core.models.GroupedOpenApi {
-        return swaggerConfig.api()
+    fun groupedOpenApi(
+        swaggerProperties: SwaggerProperties,
+        operationCustomizer: OperationCustomizer
+    ): GroupedOpenApi =
+        GroupedOpenApi
+            .builder()
+            .group(swaggerProperties.group)
+            .pathsToMatch(*swaggerProperties.pathsToMatch.toTypedArray())
+            .addOperationCustomizer(operationCustomizer)
+            .build()
+
+    private fun addResponseBodyWrapperSchemaExample(
+        operation: Operation,
+        hideDataField: Boolean,
+    ) {
+        operation.responses["200"]?.content?.let { content ->
+            content.forEach { (_, mediaType) ->
+                val originalSchema = mediaType.schema
+                mediaType.schema = wrapSchema(originalSchema, hideDataField)
+            }
+        }
     }
+
+    private fun wrapSchema(
+        originalSchema: Schema<*>?,
+        hideDataField: Boolean,
+    ): Schema<*> =
+        Schema<Any>().apply {
+            addProperty("status", Schema<String>().type("string").example("OK"))
+            addProperty("code", Schema<Int>().type("integer").example(200))
+            addProperty("message", Schema<String>().type("string").example("OK"))
+            if (!hideDataField) {
+                addProperty("data", originalSchema)
+            }
+        }
 
     @Bean
     @ConditionalOnProperty(
