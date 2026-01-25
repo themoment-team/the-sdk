@@ -137,7 +137,7 @@ import team.themoment.sdk.logging.logger.logger
 
 class MyService {
     fun doSomething() {
-        logger().infoSdk { "SDK 확장 함수로 로깅하기" }
+        logger().info("SDK 확장 함수로 로깅하기")
     }
 }
 ----
