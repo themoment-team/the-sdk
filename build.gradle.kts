@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "team.themoment"
-version = "1.0"
+version = "1.2"
 
 java {
     toolchain {
@@ -39,7 +39,7 @@ dependencies {
     api("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
 
     // Logging
-    api("org.slf4j:slf4j-api:2.0.16")
+    api("org.slf4j:slf4j-api:2.0.17")
 
     // Testing
     testImplementation(platform("org.junit:junit-bom:5.10.0"))
