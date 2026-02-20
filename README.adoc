@@ -27,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.themoment-team:the-sdk:1.0")
+    implementation("com.github.themoment-team:the-sdk:1.2")
 }
 ----
 
@@ -39,35 +39,123 @@ dependencies {
 ----
 sdk:
   logging:
-    enabled: true  # 로깅 필터 활성화 여부
-    not-logging-urls:  # 로깅 제외 URL 패턴
+    enabled: true
+    not-logging-urls:
       - "/v3/api-docs/**"
       - "/swagger-ui/**"
 
   response:
-    enabled: true  # 응답 래퍼 활성화 여부
-    not-wrapping-urls:  # 래핑 제외 URL 패턴
+    enabled: true
+    not-wrapping-urls:
       - "/v3/api-docs/**"
+      - "/v3/api-docs"
+      - "/swagger-ui/**"
 
   swagger:
-    enabled: true  # Swagger 활성화 여부
-    title: "My API"  # API 제목
-    description: "API Documentation"  # API 설명
-    version: "v1"  # API 버전
-    group: "API"  # API 그룹명
-    paths-to-match:  # 문서화할 경로 패턴
+    enabled: true
+    title: "API Documentation"
+    description: "API Documentation"
+    version: "v1"
+    group: "API"
+    paths-to-match:
       - "/v1/**"
 
   exception:
-    enabled: true  # 예외 핸들러 활성화 여부
-    use-english-message: true  # true: 영어, false: 한국어
+    enabled: true
+    use-english-message: true
 ----
 
 == 사용법
 
-=== 응답 래퍼
+=== 로깅 필터 (sdk.logging)
 
-SDK는 자동으로 API 응답을 일관된 형식으로 래핑합니다:
+SDK를 추가하면 모든 HTTP 요청과 응답에 구조화된 로그가 자동으로 기록됩니다. 각 요청/응답 쌍은 동일한 UUID(`Log-ID`)로 연결되어 추적이 가능합니다.
+
+==== 요청 로그 포맷
+
+[source]
+----
+Log-ID: {UUID}, IP: {remoteAddr}, URI: {path}, Http-Method: {method}, Params: {queryString}, Content-Type: {type}, User-Cookies: {name=value, ...}, User-Agent: {agent}, Request-Body: {singleLineBody}
+----
+
+==== 응답 로그 포맷
+
+[source]
+----
+Log-ID: {UUID}, Status-Code: {code}, Content-Type: {type}, Response Time: {ms}ms, Response-Body: {singleLineBody}
+----
+
+==== 엣지케이스 처리
+
+[cols="1,2", options="header"]
+|===
+| 상황 | 동작
+
+| multipart 요청
+| Request-Body 대신 `[multipart omitted]` 로 기록하고 `Content-Length` 헤더 값을 추가로 기록
+
+| 빈 요청 바디
+| `[empty]` 로 기록
+
+| 쿠키 없음
+| `[none]` 으로 기록
+|===
+
+==== 설정 옵션
+
+[cols="2,1,3", options="header"]
+|===
+| 옵션 | 기본값 | 설명
+
+| `sdk.logging.enabled`
+| `true`
+| 로깅 필터 활성화 여부
+
+| `sdk.logging.not-logging-urls`
+| `["/v3/api-docs/**", "/swagger-ui/**"]`
+| 로깅에서 제외할 Ant 패턴 URL 목록
+|===
+
+=== 응답 래퍼 (sdk.response)
+
+컨트롤러의 모든 반환값을 자동으로 일관된 JSON 형식으로 래핑합니다. `ResponseBodyAdvice`로 구현되어 있으며 별도 코드 없이 동작합니다.
+
+==== 응답 구조
+
+[source,json]
+----
+{
+  "status": "OK",
+  "code": 200,
+  "message": "OK",
+  "data": <컨트롤러 반환값>
+}
+----
+
+==== 케이스별 동작
+
+[cols="2,1,2", options="header"]
+|===
+| 반환값 | HTTP Status | 동작
+
+| 일반 객체 / 컬렉션
+| 200 OK
+| `CommonApiResponse` 로 자동 래핑
+
+| `null`
+| 204 No Content
+| body 없음
+
+| `CommonApiResponse` 직접 반환
+| `CommonApiResponse` 내 status
+| 그대로 통과 (이중 래핑 없음)
+
+| 4xx/5xx Map (Spring 에러)
+| 원래 status
+| `CommonApiResponse.error(...)` 형식으로 래핑
+|===
+
+==== 컨트롤러 예시
 
 [source,kotlin]
 ----
@@ -81,43 +169,9 @@ class MyController {
 }
 ----
 
-응답 형식:
+==== 수동 응답 제어
 
-[source,json]
-----
-{
-  "status": "OK",
-  "code": 200,
-  "message": "OK",
-  "data": [...]
-}
-----
-
-=== 예외 처리
-
-비즈니스 로직 오류에는 `ExpectedException`을 사용하세요:
-
-[source,kotlin]
-----
-import team.themoment.sdk.exception.ExpectedException
-import org.springframework.http.HttpStatus
-
-if (user == null) {
-    throw ExpectedException("User not found", HttpStatus.NOT_FOUND)
-}
-----
-
-한국어 메시지 사용 시 (`use-english-message: false`):
-
-[source,kotlin]
-----
-// 상태 코드에 해당하는 기본 한국어 메시지가 자동으로 적용됩니다
-throw ExpectedException(HttpStatus.NOT_FOUND)  // "요청한 리소스를 찾을 수 없습니다"
-----
-
-=== 수동 응답 제어
-
-응답 형식을 직접 제어하고 싶다면:
+응답 형식을 직접 제어하고 싶다면 `CommonApiResponse`의 팩토리 메서드를 사용하세요:
 
 [source,kotlin]
 ----
@@ -129,17 +183,230 @@ fun custom(): CommonApiResponse<String> {
 }
 ----
 
+사용 가능한 팩토리 메서드:
+
+[cols="2,1,2", options="header"]
+|===
+| 메서드 | HTTP Status | 설명
+
+| `success(message)`
+| 200 OK
+| data 없음
+
+| `success(message, data)`
+| 200 OK
+| data 포함
+
+| `created(message)`
+| 201 Created
+| data 없음
+
+| `created(message, data)`
+| 201 Created
+| data 포함
+
+| `error(message, status)`
+| 지정한 status
+| data 없음
+|===
+
+==== 설정 옵션
+
+[cols="2,1,3", options="header"]
+|===
+| 옵션 | 기본값 | 설명
+
+| `sdk.response.enabled`
+| `true`
+| 응답 래퍼 활성화 여부
+
+| `sdk.response.not-wrapping-urls`
+| `["/v3/api-docs/**", "/v3/api-docs", "/swagger-ui/**"]`
+| 래핑에서 제외할 Ant 패턴 URL 목록
+|===
+
+=== 예외 처리 (sdk.exception)
+
+`ExpectedException`을 발생시키면 `GlobalExceptionHandler`가 자동으로 처리하여 일관된 `CommonApiResponse` 형식으로 응답합니다.
+
+==== 기본 사용법
+
+[source,kotlin]
+----
+import team.themoment.sdk.exception.ExpectedException
+import org.springframework.http.HttpStatus
+
+// 커스텀 메시지 사용
+throw ExpectedException("User not found", HttpStatus.NOT_FOUND)
+
+// reasonPhrase 자동 사용 ("Not Found")
+throw ExpectedException(HttpStatus.NOT_FOUND)
+----
+
+==== 응답 예시
+
+[source,json]
+----
+{
+  "status": "NOT_FOUND",
+  "code": 404,
+  "message": "User not found"
+}
+----
+
+==== 성능 이점
+
+`ExpectedException`은 `fillInStackTrace()`를 오버라이드하여 스택 트레이스 수집을 생략합니다. 예외 생성 비용이 줄어들어 비즈니스 로직 오류 처리에 적합합니다.
+
+==== 한국어 메시지 (`use-english-message: false`)
+
+`use-english-message: false`로 설정하면 HTTP 상태 코드에 해당하는 한국어 메시지가 자동으로 적용됩니다.
+
+커스텀 메시지(`ExpectedException("User not found", HttpStatus.NOT_FOUND)`)를 사용한 경우에는 언어 설정과 무관하게 지정한 메시지가 그대로 사용됩니다.
+
+[cols="1,2", options="header"]
+|===
+| HTTP Status | 한국어 메시지
+
+| 400 Bad Request
+| 잘못된 요청입니다
+
+| 401 Unauthorized
+| 인증이 필요합니다
+
+| 403 Forbidden
+| 접근 권한이 없습니다
+
+| 404 Not Found
+| 요청한 리소스를 찾을 수 없습니다
+
+| 405 Method Not Allowed
+| 허용되지 않은 메서드입니다
+
+| 409 Conflict
+| 요청이 충돌했습니다
+
+| 500 Internal Server Error
+| 서버 내부 오류가 발생했습니다
+
+| 503 Service Unavailable
+| 서비스를 사용할 수 없습니다
+
+| 기타
+| 오류가 발생했습니다
+|===
+
+==== 설정 옵션
+
+[cols="2,1,3", options="header"]
+|===
+| 옵션 | 기본값 | 설명
+
+| `sdk.exception.enabled`
+| `true`
+| 예외 핸들러 활성화 여부
+
+| `sdk.exception.use-english-message`
+| `true`
+| `true`: 영어 메시지 / `false`: 한국어 메시지
+|===
+
+=== Swagger (sdk.swagger)
+
+SDK를 추가하면 SpringDoc 기반의 Swagger UI가 자동으로 구성됩니다. 응답 스키마는 `CommonApiResponse` 래핑 구조를 반영하여 자동으로 표시됩니다.
+
+==== 설정 옵션
+
+[cols="2,1,3", options="header"]
+|===
+| 옵션 | 기본값 | 설명
+
+| `sdk.swagger.enabled`
+| `true`
+| Swagger 활성화 여부
+
+| `sdk.swagger.title`
+| `"API Documentation"`
+| API 문서 제목
+
+| `sdk.swagger.description`
+| `"API Documentation"`
+| API 문서 설명
+
+| `sdk.swagger.version`
+| `"v1"`
+| API 버전
+
+| `sdk.swagger.group`
+| `"API"`
+| API 그룹명
+
+| `sdk.swagger.paths-to-match`
+| `["/v1/**"]`
+| 문서화할 경로 패턴 목록
+|===
+
 === Kotlin Logging 확장 함수
-Kotlin Logging을 사용하는 경우, SDK의 확장 함수를 활용할 수 있습니다:
+
+SLF4J 로거를 간편하게 생성할 수 있는 확장 함수를 제공합니다.
+
 [source,kotlin]
 ----
 import team.themoment.sdk.logging.logger.logger
 
+// 1. Any.logger() — 인스턴스 메서드로 현재 클래스 로거 반환
 class MyService {
     fun doSomething() {
-        logger().info("SDK 확장 함수로 로깅하기")
+        logger().info("인스턴스 메서드로 로깅")
     }
 }
+
+// 2. Any.companionLogger() — companion object에서 enclosing class의 로거 반환
+class MyRepository {
+    companion object {
+        private val log = companionLogger() // MyRepository 이름으로 로거 생성
+    }
+}
+
+// 3. logger(name: String) — 이름 기반 로거 생성
+val log = logger("custom-logger")
+
+// 4. logger(clazz: Class<*>) — 클래스 기반 로거 생성
+val log = logger(MyService::class.java)
+----
+
+== 전체 설정 레퍼런스
+
+모든 설정 옵션을 한 곳에서 확인할 수 있습니다. 아래 값은 기본값을 포함한 전체 예시입니다:
+
+[source,yaml]
+----
+sdk:
+  logging:
+    enabled: true
+    not-logging-urls:
+      - "/v3/api-docs/**"
+      - "/swagger-ui/**"
+
+  response:
+    enabled: true
+    not-wrapping-urls:
+      - "/v3/api-docs/**"
+      - "/v3/api-docs"
+      - "/swagger-ui/**"
+
+  swagger:
+    enabled: true
+    title: "API Documentation"
+    description: "API Documentation"
+    version: "v1"
+    group: "API"
+    paths-to-match:
+      - "/v1/**"
+
+  exception:
+    enabled: true
+    use-english-message: true
 ----
 
 == 라이선스
