@@ -147,8 +147,28 @@ class LoggingFilter(
             contentLength,
             formatCookies(request.cookies),
             request.getHeader("User-Agent"),
-            "[multipart omitted]",
+            getMultipartPartsInfo(request),
         )
+    }
+
+    private fun getMultipartPartsInfo(request: HttpServletRequest): String {
+        return try {
+            val parts = request.parts
+            if (parts.isEmpty()) return "[multipart: no parts]"
+            val partsInfo =
+                parts.joinToString(" | ") { part ->
+                    buildString {
+                        append("name=${part.name}")
+                        part.submittedFileName?.let { append(", filename=$it") }
+                        append(", size=${part.size}B")
+                        part.contentType?.let { append(", contentType=$it") }
+                    }
+                }
+            "[multipart: $partsInfo]"
+        } catch (e: Exception) {
+            logger.warn("멀티파트 파트 정보 추출 중 예외가 발생했습니다.", e)
+            "[multipart omitted]"
+        }
     }
 
     private fun responseLogging(
