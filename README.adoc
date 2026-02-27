@@ -27,7 +27,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.themoment-team:the-sdk:1.2")
+    implementation("com.github.themoment-team:the-sdk:1.3")
 }
 ----
 
@@ -73,9 +73,18 @@ SDK를 추가하면 모든 HTTP 요청과 응답에 구조화된 로그가 자�
 
 ==== 요청 로그 포맷
 
+일반 요청:
+
 [source]
 ----
 Log-ID: {UUID}, IP: {remoteAddr}, URI: {path}, Http-Method: {method}, Params: {queryString}, Content-Type: {type}, User-Cookies: {name=value, ...}, User-Agent: {agent}, Request-Body: {singleLineBody}
+----
+
+multipart 요청:
+
+[source]
+----
+Log-ID: {UUID}, IP: {remoteAddr}, URI: {path}, Http-Method: {method}, Params: {queryString}, Content-Type: {type}, Content-Length: {bytes}, User-Cookies: {name=value, ...}, User-Agent: {agent}, Request-Body: [multipart: name={field}, filename={file}, size={bytes}B, contentType={type} | ...]
 ----
 
 ==== 응답 로그 포맷
@@ -92,7 +101,7 @@ Log-ID: {UUID}, Status-Code: {code}, Content-Type: {type}, Response Time: {ms}ms
 | 상황 | 동작
 
 | multipart 요청
-| Request-Body 대신 `[multipart omitted]` 로 기록하고 `Content-Length` 헤더 값을 추가로 기록
+| `Content-Length` 헤더를 추가로 기록하고, Request-Body에는 바이너리 내용 대신 각 파트의 `name`, `filename`, `size`, `contentType` 메타데이터를 기록 (`[multipart: ...]`)
 
 | 빈 요청 바디
 | `[empty]` 로 기록
