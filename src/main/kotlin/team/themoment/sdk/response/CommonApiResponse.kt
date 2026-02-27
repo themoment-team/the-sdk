@@ -16,6 +16,7 @@ data class CommonApiResponse<T>(
     val data: T? = null,
 ) {
     companion object {
+        @JvmStatic
         fun success(message: String): CommonApiResponse<Nothing> =
             CommonApiResponse(
                 status = HttpStatus.OK,
@@ -23,6 +24,7 @@ data class CommonApiResponse<T>(
                 message = message,
             )
 
+        @JvmStatic
         fun <T> success(
             message: String,
             data: T,
@@ -34,6 +36,7 @@ data class CommonApiResponse<T>(
                 data = data,
             )
 
+        @JvmStatic
         fun created(message: String): CommonApiResponse<Nothing> =
             CommonApiResponse(
                 status = HttpStatus.CREATED,
@@ -41,6 +44,7 @@ data class CommonApiResponse<T>(
                 message = message,
             )
 
+        @JvmStatic
         fun <T> created(
             message: String,
             data: T,
@@ -52,6 +56,7 @@ data class CommonApiResponse<T>(
                 data = data,
             )
 
+        @JvmStatic
         fun error(
             message: String,
             status: HttpStatus,
