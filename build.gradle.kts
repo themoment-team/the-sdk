@@ -7,7 +7,7 @@ plugins {
 }
 
 group = "team.themoment"
-version = "1.2"
+version = "1.5"
 
 java {
     toolchain {
@@ -33,7 +33,7 @@ dependencies {
     api("org.springframework.boot:spring-boot-autoconfigure:3.4.1")
 
     // Swagger/OpenAPI
-    api("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.15")
+    api("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1")
 
     // Jackson
     api("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
