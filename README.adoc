@@ -18,7 +18,7 @@
 
 === JitPack 사용
 
-`build.gradle.kts`에 JitPack 저장소를 추가하세요:
+`build.gradle.kts` 에 JitPack 저장소를 추가하세요:
 
 [source,kotlin]
 ----
@@ -33,7 +33,7 @@ dependencies {
 
 == 설정
 
-모든 기능은 기본적으로 자동 구성되고 활성화됩니다. `application.yml`에서 커스터마이징할 수 있습니다:
+모든 기능은 기본적으로 자동 구성되고 활성화됩니다. `application.yml` 에서 커스터마이징할 수 있습니다:
 
 [source,yaml]
 ----
@@ -127,7 +127,7 @@ Log-ID: {UUID}, Status-Code: {code}, Content-Type: {type}, Response Time: {ms}ms
 
 === 응답 래퍼 (sdk.response)
 
-컨트롤러의 모든 반환값을 자동으로 일관된 JSON 형식으로 래핑합니다. `ResponseBodyAdvice`로 구현되어 있으며 별도 코드 없이 동작합니다.
+컨트롤러의 모든 반환값을 자동으로 일관된 JSON 형식으로 래핑합니다. `ResponseBodyAdvice` 로 구현되어 있으며 별도 코드 없이 동작합니다.
 
 ==== 응답 구조
 
@@ -180,7 +180,7 @@ class MyController {
 
 ==== 수동 응답 제어
 
-응답 형식을 직접 제어하고 싶다면 `CommonApiResponse`의 팩토리 메서드를 사용하세요:
+응답 형식을 직접 제어하고 싶다면 `CommonApiResponse` 의 팩토리 메서드를 사용하세요:
 
 [source,kotlin]
 ----
@@ -236,7 +236,7 @@ fun custom(): CommonApiResponse<String> {
 
 === 예외 처리 (sdk.exception)
 
-`ExpectedException`을 발생시키면 `GlobalExceptionHandler`가 자동으로 처리하여 일관된 `CommonApiResponse` 형식으로 응답합니다.
+`ExpectedException` 을 발생시키면 `GlobalExceptionHandler` 가 자동으로 처리하여 일관된 `CommonApiResponse` 형식으로 응답합니다.
 
 ==== 기본 사용법
 
@@ -265,11 +265,11 @@ throw ExpectedException(HttpStatus.NOT_FOUND)
 
 ==== 성능 이점
 
-`ExpectedException`은 `fillInStackTrace()`를 오버라이드하여 스택 트레이스 수집을 생략합니다. 예외 생성 비용이 줄어들어 비즈니스 로직 오류 처리에 적합합니다.
+`ExpectedException` 은 `fillInStackTrace()` 를 오버라이드하여 스택 트레이스 수집을 생략합니다. 예외 생성 비용이 줄어들어 비즈니스 로직 오류 처리에 적합합니다.
 
 ==== 한국어 메시지 (`use-english-message: false`)
 
-`use-english-message: false`로 설정하면 HTTP 상태 코드에 해당하는 한국어 메시지가 자동으로 적용됩니다.
+`use-english-message: false` 로 설정하면 HTTP 상태 코드에 해당하는 한국어 메시지가 자동으로 적용됩니다.
 
 커스텀 메시지(`ExpectedException("User not found", HttpStatus.NOT_FOUND)`)를 사용한 경우에는 언어 설정과 무관하게 지정한 메시지가 그대로 사용됩니다.
 
