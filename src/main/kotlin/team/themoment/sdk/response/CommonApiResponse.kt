@@ -3,9 +3,13 @@ package team.themoment.sdk.response
 import com.fasterxml.jackson.annotation.JsonInclude
 import io.swagger.v3.oas.annotations.media.Schema
 import org.springframework.http.HttpStatus
+import tools.jackson.databind.annotation.JsonDeserialize
+import tools.jackson.databind.annotation.JsonSerialize
 
 data class CommonApiResponse<T>(
     @field:Schema(description = "상태 메시지", nullable = false, example = "OK")
+    @field:JsonSerialize(using = HttpStatusNameSerializer::class)
+    @field:JsonDeserialize(using = HttpStatusNameDeserializer::class)
     val status: HttpStatus,
     @field:Schema(description = "상태 코드", nullable = false, example = "200")
     val code: Int,
