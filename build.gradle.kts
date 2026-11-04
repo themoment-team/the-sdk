@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
+
 plugins {
     id("org.jetbrains.kotlin.jvm") version "2.2.21"
     id("org.jetbrains.kotlin.plugin.spring") version "2.2.21"
@@ -23,16 +25,18 @@ repositories {
     mavenCentral()
 }
 
+val kotlinVersion = getKotlinPluginVersion()
 val springBootVersion = "4.0.9"
 val springdocVersion = "3.0.3"
 
 dependencies {
-    // Spring Boot BOM: 전이 의존성을 패치된 4.0.x로 정렬 (Gradle은 더 높은 버전을 선택하므로 소비자 버전을 낮추지 않음)
-    api(platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion"))
+    // Spring Boot BOM: 이 프로젝트의 컴파일/테스트 버전 정렬에만 사용 (소비자에게 버전 constraint를 전파하지 않음)
+    compileOnly(platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion"))
+    testImplementation(platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion"))
 
-    // Kotlin
-    api("org.jetbrains.kotlin:kotlin-reflect")
-    api("org.jetbrains.kotlin:kotlin-stdlib")
+    // Kotlin: 발행 메타데이터에 버전이 빠지지 않도록 플러그인 버전으로 고정
+    api("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
+    api("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
 
     // Spring Boot: 소비자 프로젝트의 Spring Boot 버전을 그대로 사용
     compileOnly("org.springframework.boot:spring-boot-starter-web")
