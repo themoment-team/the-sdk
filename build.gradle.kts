@@ -1,13 +1,15 @@
+import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
+
 plugins {
-    id("org.jetbrains.kotlin.jvm") version "2.1.10"
-    id("org.jetbrains.kotlin.plugin.spring") version "2.1.10"
+    id("org.jetbrains.kotlin.jvm") version "2.2.21"
+    id("org.jetbrains.kotlin.plugin.spring") version "2.2.21"
     id("java-library")
     id("maven-publish")
     id("org.jlleitschuh.gradle.ktlint") version "14.0.1"
 }
 
 group = "team.themoment"
-version = "1.5"
+version = "2.0"
 
 java {
     toolchain {
@@ -23,27 +25,32 @@ repositories {
     mavenCentral()
 }
 
+val kotlinVersion = getKotlinPluginVersion()
+val springBootVersion = "4.0.9"
+val springdocVersion = "3.0.3"
+
 dependencies {
-    // Kotlin
-    api("org.jetbrains.kotlin:kotlin-reflect")
-    api("org.jetbrains.kotlin:kotlin-stdlib")
+    // Spring Boot BOM: 이 프로젝트의 컴파일/테스트 버전 정렬에만 사용 (소비자에게 버전 constraint를 전파하지 않음)
+    compileOnly(platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion"))
+    testImplementation(platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion"))
 
-    // Spring Boot
-    api("org.springframework.boot:spring-boot-starter-web:3.4.1")
-    api("org.springframework.boot:spring-boot-autoconfigure:3.4.1")
+    // Kotlin: 발행 메타데이터에 버전이 빠지지 않도록 플러그인 버전으로 고정
+    api("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
+    api("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
 
-    // Swagger/OpenAPI
-    api("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.1")
+    // Spring Boot: 소비자 프로젝트의 Spring Boot 버전을 그대로 사용
+    compileOnly("org.springframework.boot:spring-boot-starter-web")
+    compileOnly("org.springframework.boot:spring-boot-autoconfigure")
+    compileOnly("com.fasterxml.jackson.core:jackson-annotations")
+    compileOnly("tools.jackson.core:jackson-databind")
+    compileOnly("org.slf4j:slf4j-api")
 
-    // Jackson
-    api("com.fasterxml.jackson.module:jackson-module-kotlin:2.18.2")
-
-    // Logging
-    api("org.slf4j:slf4j-api:2.0.17")
+    // Swagger/OpenAPI (springdoc 3.0.x = Spring Boot 4.0.x)
+    api("org.springdoc:springdoc-openapi-starter-webmvc-ui:$springdocVersion")
 
     // Testing
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.springframework.boot:spring-boot-starter-web")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

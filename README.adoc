@@ -16,6 +16,46 @@
 
 == 설치
 
+=== 요구 사항
+
+* Java 17 이상
+* Spring Boot 4.0.x (`spring-boot-starter-web` 필요)
+* 1.x 버전은 Spring Boot 3.x 기준입니다. Spring Boot 4로 전환하면서 2.0부터 Spring Boot 4.0.x가 필요합니다.
+
+=== 1.x에서 2.0으로 마이그레이션
+
+2.0부터 SDK는 Spring Boot 관련 의존성과 버전 관리(BOM)를 소비자 프로젝트에 전파하지 않습니다. 아래 항목은 소비자 프로젝트에서 직접 준비해야 합니다.
+
+[cols="2,3"]
+|===
+|항목 |준비 방법
+
+|Spring Boot 버전 관리
+|`org.springframework.boot` 플러그인 또는 `platform("org.springframework.boot:spring-boot-dependencies:4.0.x")` 사용
+
+|`spring-boot-starter-web`
+|직접 선언 (`spring-boot-autoconfigure`, `slf4j-api`, `jackson-annotations`도 여기에 포함됨)
+
+|`jackson-module-kotlin`
+|1.x가 전달하던 Jackson 2용 모듈은 제거됨. Kotlin 프로젝트는 Jackson 3용 `tools.jackson.module:jackson-module-kotlin`을 직접 선언
+|===
+
+[source,kotlin]
+----
+plugins {
+    id("org.springframework.boot") version "4.0.9"
+}
+
+dependencies {
+    implementation(platform(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES))
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("tools.jackson.module:jackson-module-kotlin")
+    implementation("com.github.themoment-team:the-sdk:2.0")
+}
+----
+
+NOTE: Spring Boot 4는 Jackson 3을 사용하며 enum을 기본적으로 `toString()`으로 직렬화합니다. SDK는 `CommonApiResponse.status` 필드만 1.x와 같은 형식(`"OK"`)을 유지하도록 처리하므로, 직접 정의한 응답 DTO의 enum 직렬화 형식은 각 프로젝트에서 확인해야 합니다.
+
 === JitPack 사용
 
 `build.gradle.kts`에 JitPack 저장소를 추가하세요:
@@ -27,7 +67,7 @@ repositories {
 }
 
 dependencies {
-    implementation("com.github.themoment-team:the-sdk:1.4")
+    implementation("com.github.themoment-team:the-sdk:2.0")
 }
 ----
 
