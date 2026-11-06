@@ -34,6 +34,69 @@ class SdkIntegrationTest {
     }
 
     @Test
+    fun `plain DTO preserves declared status in HTTP response and OpenAPI`() {
+        val cases =
+            listOf(
+                Triple("/v1/plain-created", 201, "Created"),
+                Triple("/v1/plain-accepted", 202, "Accepted"),
+            )
+        for ((path, code, message) in cases) {
+            mockMvc.get(path).andExpect {
+                status { isEqualTo(code) }
+                jsonPath("$.status") { value(message.uppercase()) }
+                jsonPath("$.code") { value(code) }
+                jsonPath("$.message") { value(message) }
+                jsonPath("$.data.name") { exists() }
+            }
+        }
+        for (docsPath in listOf("/v3/api-docs", "/v3/api-docs/API")) {
+            val json =
+                mockMvc
+                    .get(docsPath)
+                    .andExpect { status { isOk() } }
+                    .andReturn()
+                    .response.contentAsString
+            val document = JsonMapper.builder().build().readTree(json)
+            for ((path, code, message) in cases) {
+                val schema = document["paths"][path]["get"]["responses"][code.toString()]["content"]["*/*"]["schema"]
+                assertEquals(message.uppercase(), schema["properties"]["status"]["example"].asString())
+                assertEquals(code, schema["properties"]["code"]["example"].asInt())
+                assertEquals(message, schema["properties"]["message"]["example"].asString())
+                assertEquals("#/components/schemas/SampleBody", schema["properties"]["data"]["\$ref"].asString())
+            }
+        }
+    }
+
+    @Test
+    fun `bodyless status is preserved without serializing a DTO`() {
+        for (code in listOf(204, 205, 304)) {
+            mockMvc.get("/v1/configured-status?status=$code").andExpect {
+                status { isEqualTo(code) }
+                content { string("") }
+            }
+        }
+    }
+
+    @Test
+    fun `null body preserves explicit status and defaults OK to no content`() {
+        for (code in listOf(200, 201, 202, 204, 205, 304)) {
+            mockMvc.get("/v1/configured-status?status=$code&missing=true").andExpect {
+                status { isEqualTo(if (code == 200) 204 else code) }
+                content { string("") }
+            }
+        }
+    }
+
+    @Test
+    fun `nonstandard status passes through without an incorrect envelope`() {
+        mockMvc.get("/v1/configured-status?status=299").andExpect {
+            status { isEqualTo(299) }
+            jsonPath("$.name") { value("configured") }
+            jsonPath("$.status") { doesNotExist() }
+        }
+    }
+
+    @Test
     fun `returns 204 No Content when controller returns null`() {
         mockMvc.get("/v1/empty").andExpect {
             status { isNoContent() }

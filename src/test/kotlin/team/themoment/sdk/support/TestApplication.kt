@@ -35,6 +35,20 @@ class SampleController {
     @GetMapping("/v1/plain")
     fun plain(): SampleBody = SampleBody("the-sdk")
 
+    @GetMapping("/v1/plain-created")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun plainCreated(): SampleBody = SampleBody("new")
+
+    @GetMapping("/v1/plain-accepted")
+    @ApiResponse(responseCode = "202", description = "Accepted")
+    fun plainAccepted(): ResponseEntity<SampleBody> = ResponseEntity.accepted().body(SampleBody("queued"))
+
+    @GetMapping("/v1/configured-status")
+    fun configuredStatus(
+        @RequestParam status: Int,
+        @RequestParam(defaultValue = "false") missing: Boolean,
+    ): ResponseEntity<SampleBody> = ResponseEntity.status(status).body(if (missing) null else SampleBody("configured"))
+
     @GetMapping("/v1/upstream")
     fun upstream(): UpstreamBody = UpstreamBody("UPSTREAM_OK", 42, "upstream", null)
 
