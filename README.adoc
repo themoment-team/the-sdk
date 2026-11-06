@@ -364,6 +364,8 @@ throw ExpectedException(HttpStatus.NOT_FOUND)
 
 SDK를 추가하면 SpringDoc 기반의 Swagger UI가 자동으로 구성됩니다. 응답 스키마는 `CommonApiResponse` 래핑 구조를 반영하여 자동으로 표시됩니다.
 
+문서에 선언한 응답 코드에 맞춰 `status`와 `code` 예시를 표시합니다. 예를 들어 201 응답의 예시는 `"CREATED"`와 `201`입니다. 이미 `CommonApiResponse<T>`로 선언한 응답은 `T`의 스키마를 유지하며, 본문이 없는 응답에는 래핑 스키마를 추가하지 않습니다. `data`는 선택 필드이며 값이 `null`이면 실제 응답에서 생략됩니다.
+
 ==== 설정 옵션
 
 [cols="2,1,3", options="header"]

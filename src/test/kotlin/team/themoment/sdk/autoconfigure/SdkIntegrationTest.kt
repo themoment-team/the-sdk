@@ -1,5 +1,8 @@
 package team.themoment.sdk.autoconfigure
 
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -7,6 +10,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import team.themoment.sdk.support.TestApplication
+import tools.jackson.databind.json.JsonMapper
 
 @SpringBootTest(
     classes = [TestApplication::class],
@@ -39,6 +43,7 @@ class SdkIntegrationTest {
     fun `passes through already wrapped response with its status`() {
         mockMvc.get("/v1/created").andExpect {
             status { isCreated() }
+            jsonPath("$.status") { value("CREATED") }
             jsonPath("$.code") { value(201) }
             jsonPath("$.message") { value("생성되었습니다.") }
             jsonPath("$.data.name") { value("new") }
@@ -70,5 +75,57 @@ class SdkIntegrationTest {
             jsonPath("$.paths['/v1/plain'].get.responses['200'].content['*/*'].schema.properties.status") { exists() }
             jsonPath("$.paths['/v1/plain'].get.responses['200'].content['*/*'].schema.properties.data") { exists() }
         }
+    }
+
+    @Test
+    fun `OpenAPI keeps generic data for created and accepted responses`() {
+        val mapper = JsonMapper.builder().build()
+        for (docsPath in listOf("/v3/api-docs")) {
+            val json =
+                mockMvc
+                    .get(docsPath)
+                    .andExpect { status { isOk() } }
+                    .andReturn()
+                    .response.contentAsString
+            val document = mapper.readTree(json)
+            for ((path, code, status) in listOf(Triple("/v1/created", "201", "CREATED"), Triple("/v1/accepted", "202", "ACCEPTED"))) {
+                val schema = document["paths"][path]["get"]["responses"][code]["content"]["*/*"]["schema"]
+                assertEquals(status, schema["properties"]["status"]["example"].asString())
+                assertEquals(code.toInt(), schema["properties"]["code"]["example"].asInt())
+                assertFalse(schema["properties"].has("data"))
+                val ref = schema["allOf"][0]["\$ref"].asString().substringAfterLast('/')
+                val envelope = document["components"]["schemas"][ref]
+                val data = envelope["properties"]["data"]
+                val payloadRef = data["\$ref"] ?: data["oneOf"][0]["\$ref"]
+                assertEquals("#/components/schemas/SampleBody", payloadRef.asString())
+                assertFalse(data.path("oneOf").any { it.path("type").asString() == "null" })
+                assertFalse(envelope.path("required").any { it.asString() == "data" })
+                assertFalse(envelope["properties"]["status"].has("enum"))
+                assertEquals("object", schema["type"].asString())
+                assertEquals("string", schema["properties"]["status"]["type"].asString())
+                assertEquals("integer", schema["properties"]["code"]["type"].asString())
+            }
+            assertFalse(document["paths"]["/v1/empty"]["get"]["responses"]["204"].has("content"))
+        }
+    }
+
+    @Test
+    fun `wrapped response without payload omits data in JSON and schema`() {
+        mockMvc.get("/v1/created-without-data").andExpect {
+            status { isCreated() }
+            jsonPath("$.status") { value("CREATED") }
+            jsonPath("$.data") { doesNotExist() }
+        }
+        val json =
+            mockMvc
+                .get("/v3/api-docs")
+                .andExpect { status { isOk() } }
+                .andReturn()
+                .response.contentAsString
+        val document = JsonMapper.builder().build().readTree(json)
+        val schema = document["paths"]["/v1/created-without-data"]["get"]["responses"]["201"]["content"]["*/*"]["schema"]
+        assertNotNull(schema)
+        val ref = schema["allOf"][0]["\$ref"].asString().substringAfterLast('/')
+        assertFalse(document["components"]["schemas"][ref]["properties"].has("data"))
     }
 }
