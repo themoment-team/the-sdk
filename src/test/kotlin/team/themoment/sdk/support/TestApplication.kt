@@ -2,6 +2,7 @@ package team.themoment.sdk.support
 
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.media.SchemaProperty
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import org.springframework.boot.autoconfigure.SpringBootApplication
@@ -42,6 +43,28 @@ class SampleController {
     @GetMapping("/v1/plain-accepted")
     @ApiResponse(responseCode = "202", description = "Accepted")
     fun plainAccepted(): ResponseEntity<SampleBody> = ResponseEntity.accepted().body(SampleBody("queued"))
+
+    @GetMapping("/v1/documented-created")
+    @ResponseStatus(HttpStatus.CREATED)
+    @ApiResponses(
+        ApiResponse(
+            responseCode = "201",
+            description = "생성 성공",
+            content = [
+                Content(
+                    mediaType = "application/json",
+                    schema = Schema(type = "object", requiredProperties = ["status", "code", "message", "data"]),
+                    schemaProperties = [
+                        SchemaProperty(name = "status", schema = Schema(implementation = HttpStatus::class, example = "201 CREATED")),
+                        SchemaProperty(name = "code", schema = Schema(type = "integer", example = "201")),
+                        SchemaProperty(name = "message", schema = Schema(type = "string", example = "Created")),
+                        SchemaProperty(name = "data", schema = Schema(implementation = SampleBody::class)),
+                    ],
+                ),
+            ],
+        ),
+    )
+    fun documentedCreated(): SampleBody = SampleBody("documented")
 
     @GetMapping("/v1/configured-status")
     fun configuredStatus(

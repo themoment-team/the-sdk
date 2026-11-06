@@ -3,6 +3,7 @@ package team.themoment.sdk.swagger
 import io.swagger.v3.core.converter.AnnotatedType
 import io.swagger.v3.core.converter.ModelConverter
 import io.swagger.v3.core.converter.ModelConverterContextImpl
+import io.swagger.v3.oas.annotations.media.SchemaProperty
 import io.swagger.v3.oas.models.Operation
 import io.swagger.v3.oas.models.media.Content
 import io.swagger.v3.oas.models.media.MediaType
@@ -26,6 +27,8 @@ import team.themoment.sdk.config.SwaggerProperties
 import team.themoment.sdk.response.CommonApiResponse
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
+import io.swagger.v3.oas.annotations.media.Content as DocumentedContent
+import io.swagger.v3.oas.annotations.responses.ApiResponse as DocumentedResponse
 
 class SwaggerConfigTest {
     private val customizer = SwaggerConfig(SwaggerProperties()).operationCustomizer()
@@ -147,6 +150,27 @@ class SwaggerConfigTest {
     }
 
     @Test
+    fun `explicit schema properties only override their declared response and media type`() {
+        val explicit = ObjectSchema().addProperty("data", StringSchema())
+        val inferred = StringSchema()
+        val xml = StringSchema()
+        val operation = operation("200", explicit)
+        operation.responses.addApiResponse("201", operation("201", inferred).responses["201"])
+        operation.responses["200"]!!.content.addMediaType("application/xml", MediaType().schema(xml))
+
+        customize(operation, "documented")
+
+        assertSame(explicit, schema(operation, "200"))
+        assertSame(inferred, schema(operation, "201").properties["data"])
+        assertSame(
+            xml,
+            operation.responses["200"]!!
+                .content["application/xml"]!!
+                .schema.properties["data"],
+        )
+    }
+
+    @Test
     fun `plain DTO with envelope-like fields is still wrapped`() {
         val original =
             Schema<Any>()
@@ -238,6 +262,14 @@ class SwaggerConfigTest {
 
     class Controller {
         fun plain(): String = "sample"
+
+        @DocumentedResponse(
+            responseCode = "200",
+            content = [
+                DocumentedContent(mediaType = "application/json", schemaProperties = [SchemaProperty(name = "data")]),
+            ],
+        )
+        fun documented(): String = "sample"
 
         fun wrapped(): CommonApiResponse<String> = CommonApiResponse.success("OK", "sample")
 

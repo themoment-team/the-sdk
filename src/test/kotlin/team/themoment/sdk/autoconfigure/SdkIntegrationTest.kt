@@ -69,6 +69,33 @@ class SdkIntegrationTest {
     }
 
     @Test
+    fun `explicit response properties match runtime without another envelope`() {
+        mockMvc.get("/v1/documented-created").andExpect {
+            status { isCreated() }
+            jsonPath("$.status") { value("201 CREATED") }
+            jsonPath("$.code") { value(201) }
+            jsonPath("$.message") { value("Created") }
+            jsonPath("$.data.name") { value("documented") }
+            jsonPath("$.data.data") { doesNotExist() }
+        }
+        for (docsPath in listOf("/v3/api-docs", "/v3/api-docs/API")) {
+            val json =
+                mockMvc
+                    .get(docsPath)
+                    .andExpect { status { isOk() } }
+                    .andReturn()
+                    .response.contentAsString
+            val document = JsonMapper.builder().build().readTree(json)
+            val response = document["paths"]["/v1/documented-created"]["get"]["responses"]["201"]
+            val properties = response["content"]["application/json"]["schema"]["properties"]
+            assertEquals("201 CREATED", properties["status"]["example"].asString())
+            assertEquals(201, properties["code"]["example"].asInt())
+            assertEquals("Created", properties["message"]["example"].asString())
+            assertEquals("#/components/schemas/SampleBody", properties["data"]["\$ref"].asString())
+        }
+    }
+
+    @Test
     fun `bodyless status is preserved without serializing a DTO`() {
         for (code in listOf(204, 205, 304)) {
             mockMvc.get("/v1/configured-status?status=$code").andExpect {

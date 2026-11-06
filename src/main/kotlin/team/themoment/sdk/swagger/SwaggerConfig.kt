@@ -6,6 +6,7 @@ import io.swagger.v3.core.converter.ModelConverters
 import io.swagger.v3.core.util.Json
 import io.swagger.v3.oas.annotations.OpenAPIDefinition
 import io.swagger.v3.oas.annotations.info.Info
+import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.models.Operation
 import io.swagger.v3.oas.models.media.IntegerSchema
 import io.swagger.v3.oas.models.media.ObjectSchema
@@ -16,6 +17,7 @@ import org.springdoc.core.models.GroupedOpenApi
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.ResolvableType
+import org.springframework.core.annotation.AnnotatedElementUtils
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpStatus
 import team.themoment.sdk.config.SwaggerProperties
@@ -44,7 +46,12 @@ class SwaggerConfig(
                     returnType
                 }
             val returnsEnvelope = CommonApiResponse::class.java.isAssignableFrom(bodyType.toClass())
-            addResponseBodyWrapperSchemaExample(operation, returnsEnvelope)
+            val declaredResponses =
+                (
+                    AnnotatedElementUtils.findMergedRepeatableAnnotations(handlerMethod.beanType, ApiResponse::class.java) +
+                        AnnotatedElementUtils.findMergedRepeatableAnnotations(handlerMethod.method, ApiResponse::class.java)
+                ).associateBy { it.responseCode }
+            addResponseBodyWrapperSchemaExample(operation, returnsEnvelope, declaredResponses)
 
             operation
         }
@@ -82,6 +89,7 @@ class SwaggerConfig(
     private fun addResponseBodyWrapperSchemaExample(
         operation: Operation,
         returnsEnvelope: Boolean,
+        declaredResponses: Map<String, ApiResponse>,
     ) {
         val commonResponseRef =
             ModelConverters
@@ -94,7 +102,13 @@ class SwaggerConfig(
                 response.content = null
                 return@forEach
             }
-            response.content?.forEach media@{ (_, mediaType) ->
+            val declaredContent = declaredResponses[responseCode]?.content.orEmpty()
+            response.content?.forEach media@{ (contentType, mediaType) ->
+                val explicitlyDefined =
+                    declaredContent.any {
+                        it.schemaProperties.isNotEmpty() && (it.mediaType.isEmpty() || it.mediaType == contentType)
+                    }
+                if (explicitlyDefined) return@media
                 val originalSchema = mediaType.schema ?: return@media
                 if (originalSchema is WrappedResponseSchema) return@media
                 val alreadyWrapped = returnsEnvelope || originalSchema.`$ref` != null && originalSchema.`$ref` == commonResponseRef
