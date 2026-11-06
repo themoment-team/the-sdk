@@ -42,7 +42,6 @@ dependencies {
     compileOnly("org.springframework.boot:spring-boot-starter-web")
     compileOnly("org.springframework.boot:spring-boot-autoconfigure")
     compileOnly("com.fasterxml.jackson.core:jackson-annotations")
-    compileOnly("tools.jackson.core:jackson-databind")
     compileOnly("org.slf4j:slf4j-api")
 
     // Swagger/OpenAPI (springdoc 3.0.x = Spring Boot 4.0.x)
