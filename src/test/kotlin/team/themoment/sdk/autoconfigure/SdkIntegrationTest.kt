@@ -80,7 +80,7 @@ class SdkIntegrationTest {
     @Test
     fun `OpenAPI keeps generic data for created and accepted responses`() {
         val mapper = JsonMapper.builder().build()
-        for (docsPath in listOf("/v3/api-docs")) {
+        for (docsPath in listOf("/v3/api-docs", "/v3/api-docs/API")) {
             val json =
                 mockMvc
                     .get(docsPath)
