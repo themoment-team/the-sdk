@@ -3,6 +3,7 @@ package team.themoment.sdk.autoconfigure
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -100,7 +101,11 @@ class SdkIntegrationTest {
                 assertEquals("#/components/schemas/SampleBody", payloadRef.asString())
                 assertFalse(data.path("oneOf").any { it.path("type").asString() == "null" })
                 assertFalse(envelope.path("required").any { it.asString() == "data" })
-                assertFalse(envelope["properties"]["status"].has("enum"))
+                val statusProperty = envelope["properties"]["status"]
+                assertTrue(statusProperty["enum"].any { it.asString() == status })
+                assertFalse(statusProperty["enum"].any { it.asString().startsWith("200 ") })
+                assertFalse(statusProperty.has("example"))
+                assertFalse(envelope["properties"]["code"].has("example"))
                 assertEquals("object", schema["type"].asString())
                 assertEquals("string", schema["properties"]["status"]["type"].asString())
                 assertEquals("integer", schema["properties"]["code"]["type"].asString())
@@ -127,5 +132,45 @@ class SdkIntegrationTest {
         assertNotNull(schema)
         val ref = schema["allOf"][0]["\$ref"].asString().substringAfterLast('/')
         assertFalse(document["components"]["schemas"][ref]["properties"].has("data"))
+    }
+
+    @Test
+    fun `ordinary DTO with SDK-like name retains its schema and is wrapped`() {
+        mockMvc.get("/v1/upstream").andExpect {
+            status { isOk() }
+            jsonPath("$.status") { value("OK") }
+            jsonPath("$.data.status") { value("UPSTREAM_OK") }
+            jsonPath("$.data.code") { value(42) }
+        }
+        val json =
+            mockMvc
+                .get("/v3/api-docs")
+                .andReturn()
+                .response.contentAsString
+        val document = JsonMapper.builder().build().readTree(json)
+        val schema = document["paths"]["/v1/upstream"]["get"]["responses"]["200"]["content"]["*/*"]["schema"]
+        assertEquals("#/components/schemas/CommonApiResponseDto", schema["properties"]["data"]["\$ref"].asString())
+        val component = document["components"]["schemas"]["CommonApiResponseDto"]
+        assertTrue(component["required"].any { it.asString() == "data" })
+        val data = component["properties"]["data"]
+        assertTrue(data.path("type").any { it.asString() == "null" } || data.path("oneOf").any { it.path("type").asString() == "null" })
+    }
+
+    @Test
+    fun `nullable DTO declares both runtime outcomes without ResponseStatus`() {
+        mockMvc.get("/v1/nullable").andExpect {
+            status { isOk() }
+            jsonPath("$.data.name") { value("found") }
+        }
+        mockMvc.get("/v1/nullable?missing=true").andExpect { status { isNoContent() } }
+        val json =
+            mockMvc
+                .get("/v3/api-docs")
+                .andReturn()
+                .response.contentAsString
+        val document = JsonMapper.builder().build().readTree(json)
+        val responses = document["paths"]["/v1/nullable"]["get"]["responses"]
+        assertTrue(responses["200"].has("content"))
+        assertFalse(responses["204"].has("content"))
     }
 }

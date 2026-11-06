@@ -1,9 +1,14 @@
 package team.themoment.sdk.swagger
 
+import io.swagger.v3.core.converter.AnnotatedType
+import io.swagger.v3.core.converter.ModelConverter
+import io.swagger.v3.core.converter.ModelConverterContextImpl
 import io.swagger.v3.oas.models.Operation
 import io.swagger.v3.oas.models.media.Content
 import io.swagger.v3.oas.models.media.MediaType
+import io.swagger.v3.oas.models.media.ObjectSchema
 import io.swagger.v3.oas.models.media.Schema
+import io.swagger.v3.oas.models.media.StringSchema
 import io.swagger.v3.oas.models.responses.ApiResponse
 import io.swagger.v3.oas.models.responses.ApiResponses
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -28,7 +33,7 @@ class SwaggerConfigTest {
 
     @ParameterizedTest
     @EnumSource(HttpStatus::class, names = ["OK", "CREATED", "ACCEPTED"])
-    fun `success examples match serialized CommonApiResponse`(status: HttpStatus) {
+    fun `declared success examples match CommonApiResponse serialization`(status: HttpStatus) {
         val payload = Schema<Any>().type("object").addProperty("name", Schema<String>().type("string"))
         val operation = operation(status.value().toString(), payload)
 
@@ -47,7 +52,7 @@ class SwaggerConfigTest {
     @ParameterizedTest
     @EnumSource(HttpStatus::class, names = ["OK", "CREATED", "ACCEPTED", "BAD_REQUEST"])
     fun `wrapped generic reference is preserved without nesting data`(status: HttpStatus) {
-        val original = Schema<Any>().`$ref`("#/components/schemas/CommonApiResponseSampleBody")
+        val original = Schema<Any>().`$ref`("#/components/schemas/RenamedEnvelope")
         val operation = operation(status.value().toString(), original)
 
         customize(operation, "wrapped")
@@ -61,7 +66,7 @@ class SwaggerConfigTest {
 
     @Test
     fun `ResponseEntity containing CommonApiResponse retains generic reference`() {
-        val original = Schema<Any>().`$ref`("#/components/schemas/CommonApiResponseSampleBody")
+        val original = Schema<Any>().`$ref`("#/components/schemas/RenamedEnvelope")
         val operation = operation("202", original)
 
         customize(operation, "entity")
@@ -96,7 +101,7 @@ class SwaggerConfigTest {
 
     @Test
     fun `customizing twice does not wrap the response again`() {
-        for (original in listOf(Schema<Any>().type("object"), Schema<Any>().`$ref`("#/components/schemas/CommonApiResponseSampleBody"))) {
+        for (original in listOf(Schema<Any>().type("object"), Schema<Any>().`$ref`("#/components/schemas/RenamedEnvelope"))) {
             val operation = operation("200", original)
             customize(operation)
             val once = schema(operation, "200")
@@ -133,12 +138,74 @@ class SwaggerConfigTest {
 
     @Test
     fun `raw error and default response schemas stay unchanged`() {
-        for (code in listOf("400", "default")) {
+        for (code in listOf("400", "2XX", "4XX", "5XX", "default")) {
             val original = Schema<Any>().type("object")
             val operation = operation(code, original)
             customize(operation)
             assertSame(original, schema(operation, code))
         }
+    }
+
+    @Test
+    fun `plain DTO with envelope-like fields is still wrapped`() {
+        val original =
+            Schema<Any>()
+                .type("object")
+                .addProperty("status", Schema<String>().example("OK"))
+                .addProperty("code", Schema<Int>().example(200))
+                .addProperty("message", Schema<String>().example("upstream"))
+        val operation = operation("200", original)
+
+        customize(operation)
+
+        assertSame(original, schema(operation, "200").properties["data"])
+    }
+
+    @Test
+    fun `plain DTO with SDK-like schema name is still wrapped`() {
+        val original = Schema<Any>().`$ref`("#/components/schemas/CommonApiResponseDto")
+        val operation = operation("200", original)
+
+        customize(operation)
+
+        assertSame(original, schema(operation, "200").properties["data"])
+    }
+
+    @Test
+    fun `null-only data is removed from properties and required`() {
+        val nullSchemas =
+            listOf(
+                Schema<Any>().type("null"),
+                Schema<Any>().types(setOf("null")),
+                Schema<Any>().oneOf(listOf(Schema<Any>().type("null"))),
+                Schema<Any>().anyOf(listOf(Schema<Any>().oneOf(listOf(Schema<Any>().type("null"))))),
+            )
+        for (data in nullSchemas) {
+            val envelope = convertEnvelope(data)
+            assertFalse(envelope.properties.containsKey("data"))
+            assertFalse(envelope.required.orEmpty().contains("data"))
+        }
+    }
+
+    @Test
+    fun `non-null data alternatives are preserved without nullability`() {
+        val value = StringSchema().nullable(true)
+        val data = Schema<Any>().anyOf(listOf(value, Schema<Any>().type("null")))
+
+        val envelope = convertEnvelope(data)
+
+        assertSame(data, envelope.properties["data"])
+        assertEquals(listOf(value), data.anyOf)
+        assertNull(value.nullable)
+        assertFalse(envelope.required.orEmpty().contains("data"))
+    }
+
+    private fun convertEnvelope(data: Schema<*>): Schema<*> {
+        val envelope = ObjectSchema().addProperty("status", StringSchema()).addProperty("data", data)
+        envelope.required = listOf("status", "data")
+        val converter = SwaggerConfig(SwaggerProperties()).commonApiResponseModelConverter()
+        val delegate = ModelConverter { _, _, _ -> envelope }
+        return ModelConverterContextImpl(listOf(converter, delegate)).resolve(AnnotatedType(CommonApiResponse::class.java))
     }
 
     private fun operation(
