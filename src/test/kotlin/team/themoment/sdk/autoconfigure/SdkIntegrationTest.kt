@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
+import org.springframework.http.HttpStatus
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
 import team.themoment.sdk.support.TestApplication
@@ -26,7 +27,7 @@ class SdkIntegrationTest {
     fun `wraps plain controller response in CommonApiResponse`() {
         mockMvc.get("/v1/plain").andExpect {
             status { isOk() }
-            jsonPath("$.status") { value("OK") }
+            jsonPath("$.status") { value("200 OK") }
             jsonPath("$.code") { value(200) }
             jsonPath("$.message") { value("OK") }
             jsonPath("$.data.name") { value("the-sdk") }
@@ -43,7 +44,7 @@ class SdkIntegrationTest {
         for ((path, code, message) in cases) {
             mockMvc.get(path).andExpect {
                 status { isEqualTo(code) }
-                jsonPath("$.status") { value(message.uppercase()) }
+                jsonPath("$.status") { value("$code ${message.uppercase()}") }
                 jsonPath("$.code") { value(code) }
                 jsonPath("$.message") { value(message) }
                 jsonPath("$.data.name") { exists() }
@@ -59,7 +60,7 @@ class SdkIntegrationTest {
             val document = JsonMapper.builder().build().readTree(json)
             for ((path, code, message) in cases) {
                 val schema = document["paths"][path]["get"]["responses"][code.toString()]["content"]["*/*"]["schema"]
-                assertEquals(message.uppercase(), schema["properties"]["status"]["example"].asString())
+                assertEquals("$code ${message.uppercase()}", schema["properties"]["status"]["example"].asString())
                 assertEquals(code, schema["properties"]["code"]["example"].asInt())
                 assertEquals(message, schema["properties"]["message"]["example"].asString())
                 assertEquals("#/components/schemas/SampleBody", schema["properties"]["data"]["\$ref"].asString())
@@ -107,7 +108,7 @@ class SdkIntegrationTest {
     fun `passes through already wrapped response with its status`() {
         mockMvc.get("/v1/created").andExpect {
             status { isCreated() }
-            jsonPath("$.status") { value("CREATED") }
+            jsonPath("$.status") { value("201 CREATED") }
             jsonPath("$.code") { value(201) }
             jsonPath("$.message") { value("생성되었습니다.") }
             jsonPath("$.data.name") { value("new") }
@@ -118,6 +119,7 @@ class SdkIntegrationTest {
     fun `handles ExpectedException with custom message`() {
         mockMvc.get("/v1/error").andExpect {
             status { isBadRequest() }
+            jsonPath("$.status") { value("400 BAD_REQUEST") }
             jsonPath("$.code") { value(400) }
             jsonPath("$.message") { value("커스텀 에러") }
             jsonPath("$.data") { doesNotExist() }
@@ -128,6 +130,7 @@ class SdkIntegrationTest {
     fun `translates default reason phrase to Korean message`() {
         mockMvc.get("/v1/not-found").andExpect {
             status { isNotFound() }
+            jsonPath("$.status") { value("404 NOT_FOUND") }
             jsonPath("$.message") { value("요청한 리소스를 찾을 수 없습니다") }
         }
     }
@@ -144,6 +147,11 @@ class SdkIntegrationTest {
     @Test
     fun `OpenAPI keeps generic data for created and accepted responses`() {
         val mapper = JsonMapper.builder().build()
+        val cases =
+            listOf(
+                Triple("/v1/created", "201", "201 CREATED"),
+                Triple("/v1/accepted", "202", "202 ACCEPTED"),
+            )
         for (docsPath in listOf("/v3/api-docs", "/v3/api-docs/API")) {
             val json =
                 mockMvc
@@ -152,7 +160,7 @@ class SdkIntegrationTest {
                     .andReturn()
                     .response.contentAsString
             val document = mapper.readTree(json)
-            for ((path, code, status) in listOf(Triple("/v1/created", "201", "CREATED"), Triple("/v1/accepted", "202", "ACCEPTED"))) {
+            for ((path, code, status) in cases) {
                 val schema = document["paths"][path]["get"]["responses"][code]["content"]["*/*"]["schema"]
                 assertEquals(status, schema["properties"]["status"]["example"].asString())
                 assertEquals(code.toInt(), schema["properties"]["code"]["example"].asInt())
@@ -166,7 +174,10 @@ class SdkIntegrationTest {
                 assertFalse(envelope.path("required").any { it.asString() == "data" })
                 val statusProperty = envelope["properties"]["status"]
                 assertTrue(statusProperty["enum"].any { it.asString() == status })
-                assertFalse(statusProperty["enum"].any { it.asString().startsWith("200 ") })
+                assertEquals(
+                    HttpStatus.entries.map { it.toString() }.toSet(),
+                    statusProperty["enum"].asSequence().map { it.asString() }.toSet(),
+                )
                 assertFalse(statusProperty.has("example"))
                 assertFalse(envelope["properties"]["code"].has("example"))
                 assertEquals("object", schema["type"].asString())
@@ -181,7 +192,7 @@ class SdkIntegrationTest {
     fun `wrapped response without payload omits data in JSON and schema`() {
         mockMvc.get("/v1/created-without-data").andExpect {
             status { isCreated() }
-            jsonPath("$.status") { value("CREATED") }
+            jsonPath("$.status") { value("201 CREATED") }
             jsonPath("$.data") { doesNotExist() }
         }
         val json =
@@ -201,7 +212,7 @@ class SdkIntegrationTest {
     fun `ordinary DTO with SDK-like name retains its schema and is wrapped`() {
         mockMvc.get("/v1/upstream").andExpect {
             status { isOk() }
-            jsonPath("$.status") { value("OK") }
+            jsonPath("$.status") { value("200 OK") }
             jsonPath("$.data.status") { value("UPSTREAM_OK") }
             jsonPath("$.data.code") { value(42) }
         }

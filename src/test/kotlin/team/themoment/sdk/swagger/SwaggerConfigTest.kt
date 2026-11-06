@@ -60,7 +60,7 @@ class SwaggerConfigTest {
         val schema = schema(operation, status.value().toString())
         assertTrue(containsSchema(schema, original))
         assertNull(schema.properties?.get("data"))
-        assertEquals(status.name, schema.properties["status"]?.example)
+        assertEquals(status.toString(), schema.properties["status"]?.example)
         assertEquals(status.value(), schema.properties["code"]?.example)
     }
 
@@ -82,7 +82,7 @@ class SwaggerConfigTest {
         val original =
             Schema<Any>()
                 .type("object")
-                .addProperty("status", Schema<String>().example("OK"))
+                .addProperty("status", Schema<String>().example("200 OK"))
                 .addProperty("code", Schema<Int>().example(200))
                 .addProperty("message", Schema<String>().example("생성되었습니다."))
                 .addProperty("data", payload)

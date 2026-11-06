@@ -68,7 +68,7 @@ class SwaggerConfig(
 
                 @Suppress("UNCHECKED_CAST")
                 val status = envelope.properties?.get("status") as? Schema<String>
-                status?.setEnum(HttpStatus.entries.map { it.name })
+                status?.setEnum(HttpStatus.entries.map { it.toString() })
                 val data = envelope.properties?.get("data")
                 if (data != null) {
                     // NON_NULL makes data optional, including when its only possible value is null.
@@ -114,8 +114,8 @@ class SwaggerConfig(
             addProperty(
                 "status",
                 StringSchema().apply {
-                    setEnum(HttpStatus.entries.map { it.name })
-                    example = status.name
+                    setEnum(HttpStatus.entries.map { it.toString() })
+                    example = status.toString()
                 },
             )
             addProperty("code", IntegerSchema().example(status.value()))
