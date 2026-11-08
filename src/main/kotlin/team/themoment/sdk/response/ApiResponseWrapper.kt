@@ -7,6 +7,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.converter.HttpMessageConverter
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
+import org.springframework.http.server.ServletServerHttpResponse
 import org.springframework.util.AntPathMatcher
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice
@@ -46,18 +47,20 @@ class ApiResponseWrapper(
                 val errorResponse = exceptionResponse(response, bodyMap)
                 if (errorResponse != null) return errorResponse
             }
-
-            null -> {
-                response.setStatusCode(HttpStatus.NO_CONTENT)
-                return null
-            }
         }
 
-        response.setStatusCode(HttpStatus.OK)
+        val statusCode = (response as? ServletServerHttpResponse)?.servletResponse?.status ?: HttpStatus.OK.value()
+        if (body == null) {
+            if (statusCode == HttpStatus.OK.value()) response.setStatusCode(HttpStatus.NO_CONTENT)
+            return null
+        }
+        // CommonApiResponse cannot represent status codes outside HttpStatus.
+        val status = HttpStatus.resolve(statusCode) ?: return body
+        if (status in setOf(HttpStatus.NO_CONTENT, HttpStatus.RESET_CONTENT, HttpStatus.NOT_MODIFIED)) return null
         return CommonApiResponse(
-            status = HttpStatus.OK,
-            code = HttpStatus.OK.value(),
-            message = "OK",
+            status = status,
+            code = status.value(),
+            message = status.reasonPhrase,
             data = body,
         )
     }
