@@ -10,6 +10,12 @@ permissions:
 
 jobs:
   build-and-publish:
+    # Maven Central은 공개한 버전을 되돌릴 수 없다. pre-release로 버전 좌표가 소진되지 않도록 막는다.
+    if: github.event.release.prerelease == false
+    # 릴리즈가 겹쳐 게시돼도 배포는 한 번에 하나씩 진행한다.
+    concurrency:
+      group: maven-central-publish
+      cancel-in-progress: false
     runs-on: ubuntu-latest
 
     steps:
