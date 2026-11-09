@@ -36,6 +36,21 @@ jobs:
             exit 1
           fi
 
+      # 필수 시크릿이 없으면 테스트/퍼블리시까지 갈 필요 없이 즉시 실패시킨다.
+      - name: Verify required secrets
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          for name in MAVEN_CENTRAL_USERNAME MAVEN_CENTRAL_PASSWORD SIGNING_KEY SIGNING_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::${name} 시크릿이 등록되지 않았습니다."
+              exit 1
+            fi
+          done
+
       - name: Set up JDK 17
         uses: actions/setup-java@v5
         with:
