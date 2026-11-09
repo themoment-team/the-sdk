@@ -1,6 +1,6 @@
-# GEMINI.md
+# AGENTS.md
 
-This file provides guidance to Gemini CLI when working with code in this repository.
+This file provides guidance to AI coding agents when working with code in this repository.
 
 ## Communication
 
@@ -8,10 +8,10 @@ Always respond in Korean.
 
 ## Project Overview
 
-A modular Spring Boot SDK library (not an application) distributed via JitPack. It provides reusable auto-configured components for Spring Boot projects: HTTP logging, response wrapping, Swagger/OpenAPI setup, and exception handling.
+A modular Spring Boot SDK library (not an application) distributed via Maven Central (`io.github.themoment-team:the-sdk`). It provides reusable auto-configured components for Spring Boot projects: HTTP logging, response wrapping, Swagger/OpenAPI setup, and exception handling.
 
 - **Language**: Kotlin, Java 17 toolchain
-- **Framework**: Spring Boot 3.x
+- **Framework**: Spring Boot 4.0.x (springdoc-openapi 3.0.x)
 - **Build**: Gradle (Kotlin DSL) 9.2
 - **Package root**: `team.themoment.sdk`
 

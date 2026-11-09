@@ -1,14 +1,17 @@
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinJvm
+import com.vanniktech.maven.publish.SourcesJar
 import org.jetbrains.kotlin.gradle.plugin.getKotlinPluginVersion
 
 plugins {
     id("org.jetbrains.kotlin.jvm") version "2.2.21"
     id("org.jetbrains.kotlin.plugin.spring") version "2.2.21"
     id("java-library")
-    id("maven-publish")
+    id("com.vanniktech.maven.publish") version "0.37.0"
     id("org.jlleitschuh.gradle.ktlint") version "14.0.1"
 }
 
-group = "team.themoment"
+group = "io.github.themoment-team"
 version = "2.0"
 
 java {
@@ -17,8 +20,6 @@ java {
     }
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
-    withSourcesJar()
-    withJavadocJar()
 }
 
 repositories {
@@ -57,41 +58,44 @@ tasks.test {
     useJUnitPlatform()
 }
 
-publishing {
-    publications {
-        create<MavenPublication>("maven") {
-            groupId = project.group.toString()
-            artifactId = "the-sdk"
-            version = project.version.toString()
+// Maven Central 배포 설정. CI에서는 ORG_GRADLE_PROJECT_* 환경 변수로 인증 정보와 서명 키를 전달합니다.
+mavenPublishing {
+    // Kotlin 소스는 javadoc 도구로 문서화되지 않으므로 Central 요구사항을 충족하는 빈 javadoc jar를 발행합니다.
+    configure(KotlinJvm(javadocJar = JavadocJar.Empty(), sourcesJar = SourcesJar.Sources()))
+    publishToMavenCentral()
+    // 서명 키에 실제 값이 있을 때만 서명합니다. 키가 없어도 publishToMavenLocal로 로컬 검증을 할 수 있고,
+    // 서명 없이 Central에 올리면 Portal 검증에서 거부되므로 잘못 배포될 위험은 없습니다.
+    // GitHub Secrets가 누락되면 ORG_GRADLE_PROJECT_* 값이 빈 문자열로 주입되므로 isPresent만으로 판단하지 않습니다.
+    val signingKey = providers.gradleProperty("signingInMemoryKey").orNull
+    if (!signingKey.isNullOrBlank()) {
+        signAllPublications()
+    }
+    coordinates(group.toString(), "the-sdk", version.toString())
 
-            from(components["java"])
+    pom {
+        name = "The SDK"
+        description = "Modular SDK for reusable Spring Boot components"
+        url = "https://github.com/themoment-team/the-sdk"
 
-            pom {
-                name = "The SDK"
-                description = "Modular SDK for reusable Spring Boot components"
-                url = "https://github.com/themoment-team/the-sdk"
-
-                licenses {
-                    license {
-                        name = "MIT License"
-                        url = "https://opensource.org/licenses/MIT"
-                    }
-                }
-
-                developers {
-                    developer {
-                        id = "themoment"
-                        name = "themoment-team"
-                        email = "official.themoment.team@gmail.com"
-                    }
-                }
-
-                scm {
-                    connection = "scm:git:git://github.com/themoment-team/the-sdk.git"
-                    developerConnection = "scm:git:ssh://github.com:themoment-team/the-sdk.git"
-                    url = "https://github.com/themoment-team/the-sdk"
-                }
+        licenses {
+            license {
+                name = "MIT License"
+                url = "https://opensource.org/licenses/MIT"
             }
+        }
+
+        developers {
+            developer {
+                id = "themoment"
+                name = "themoment-team"
+                email = "official.themoment.team@gmail.com"
+            }
+        }
+
+        scm {
+            connection = "scm:git:git://github.com/themoment-team/the-sdk.git"
+            developerConnection = "scm:git:ssh://github.com:themoment-team/the-sdk.git"
+            url = "https://github.com/themoment-team/the-sdk"
         }
     }
 }

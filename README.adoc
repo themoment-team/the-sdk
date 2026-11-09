@@ -50,26 +50,28 @@ dependencies {
     implementation(platform(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("tools.jackson.module:jackson-module-kotlin")
-    implementation("com.github.themoment-team:the-sdk:2.0")
+    implementation("io.github.themoment-team:the-sdk:2.0")
 }
 ----
 
 NOTE: Spring Boot 4는 Jackson 3을 사용하며 enum을 기본적으로 `toString()`으로 직렬화합니다. `CommonApiResponse.status`도 이 기본값을 따라 `"200 OK"`, `"201 CREATED"` 형식으로 출력됩니다.
 
-=== JitPack 사용
+=== Maven Central 사용
 
-`build.gradle.kts` 에 JitPack 저장소를 추가하세요:
+SDK는 Maven Central에 배포됩니다. 별도 저장소 설정 없이 `mavenCentral()`만 있으면 됩니다:
 
 [source,kotlin]
 ----
 repositories {
-    maven { url = uri("https://jitpack.io") }
+    mavenCentral()
 }
 
 dependencies {
-    implementation("com.github.themoment-team:the-sdk:2.0")
+    implementation("io.github.themoment-team:the-sdk:2.0")
 }
 ----
+
+NOTE: 이전 버전은 JitPack(`com.github.themoment-team:the-sdk`)으로 배포되었습니다. Maven Central 배포부터는 좌표가 `io.github.themoment-team:the-sdk`로 바뀌며, 패키지명(`team.themoment.sdk`)은 그대로입니다.
 
 == 설정
 

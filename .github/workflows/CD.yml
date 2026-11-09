@@ -1,0 +1,88 @@
+name: CD
+
+# GitHub에서 릴리즈(릴리즈 노트)를 게시하면 해당 태그 기준으로 Maven Central에 배포한다.
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+    # Maven Central은 공개한 버전을 되돌릴 수 없다. pre-release로 버전 좌표가 소진되지 않도록 막는다.
+    if: github.event.release.prerelease == false
+    # 릴리즈가 겹쳐 게시돼도 배포는 한 번에 하나씩 진행한다.
+    concurrency:
+      group: maven-central-publish
+      cancel-in-progress: false
+    # Settings > Environments에서 승인자·배포 브랜치 보호를 걸면 시크릿 노출 전에 그 규칙이 적용된다.
+    environment: maven-central
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+
+      # 임의 브랜치의 커밋에 태그를 붙여 빌드 스크립트로 시크릿을 빼낼 수 없도록, master에 머지된 커밋만 배포한다.
+      # 빌드 스크립트를 실행하는 다른 단계보다 먼저 확인해야 한다.
+      - name: Check tag commit is on master
+        run: |
+          if ! git merge-base --is-ancestor HEAD origin/master; then
+            echo "::error::릴리즈 태그가 master에 포함되지 않은 커밋을 가리킵니다."
+            exit 1
+          fi
+
+      # 필수 시크릿이 없으면 테스트/퍼블리시까지 갈 필요 없이 즉시 실패시킨다.
+      - name: Verify required secrets
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          SIGNING_KEY: ${{ secrets.SIGNING_KEY }}
+          SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+        run: |
+          for name in MAVEN_CENTRAL_USERNAME MAVEN_CENTRAL_PASSWORD SIGNING_KEY SIGNING_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::${name} 시크릿이 등록되지 않았습니다."
+              exit 1
+            fi
+          done
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      # 태그(예: 2.0 또는 v2.0)와 build.gradle.kts의 version이 다르면 잘못된 버전이 배포되므로 막는다
+      - name: Check tag matches project version
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: |
+          VERSION=$(./gradlew properties -q | awk '/^version:/ {print $2}')
+          if [ "${TAG#v}" != "$VERSION" ]; then
+            echo "::error::릴리즈 태그($TAG)와 build.gradle.kts 버전($VERSION)이 다릅니다."
+            exit 1
+          fi
+
+      - name: Test
+        run: ./gradlew clean check
+
+      # 업로드, Portal 검증, 공개까지 한 번에 진행한다.
+      # Portal에서 직접 공개 버튼을 누르고 싶다면 publishToMavenCentral로 바꾼다.
+      - name: Publish to Maven Central
+        run: ./gradlew publishAndReleaseToMavenCentral
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_KEY_PASSWORD }}
