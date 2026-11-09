@@ -63,9 +63,11 @@ mavenPublishing {
     // Kotlin 소스는 javadoc 도구로 문서화되지 않으므로 Central 요구사항을 충족하는 빈 javadoc jar를 발행합니다.
     configure(KotlinJvm(javadocJar = JavadocJar.Empty(), sourcesJar = SourcesJar.Sources()))
     publishToMavenCentral()
-    // 서명 키가 있을 때만 서명합니다. 키가 없어도 publishToMavenLocal로 로컬 검증을 할 수 있고,
+    // 서명 키에 실제 값이 있을 때만 서명합니다. 키가 없어도 publishToMavenLocal로 로컬 검증을 할 수 있고,
     // 서명 없이 Central에 올리면 Portal 검증에서 거부되므로 잘못 배포될 위험은 없습니다.
-    if (providers.gradleProperty("signingInMemoryKey").isPresent) {
+    // GitHub Secrets가 누락되면 ORG_GRADLE_PROJECT_* 값이 빈 문자열로 주입되므로 isPresent만으로 판단하지 않습니다.
+    val signingKey = providers.gradleProperty("signingInMemoryKey").orNull
+    if (!signingKey.isNullOrBlank()) {
         signAllPublications()
     }
     coordinates(group.toString(), "the-sdk", version.toString())
