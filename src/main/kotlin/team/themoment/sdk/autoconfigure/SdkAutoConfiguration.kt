@@ -1,5 +1,6 @@
 package team.themoment.sdk.autoconfigure
 
+import org.springdoc.webmvc.core.configuration.MultipleOpenApiSupportConfiguration
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -15,7 +16,7 @@ import team.themoment.sdk.logging.LoggingFilter
 import team.themoment.sdk.response.ApiResponseWrapper
 import team.themoment.sdk.swagger.SwaggerConfig
 
-@AutoConfiguration
+@AutoConfiguration(before = [MultipleOpenApiSupportConfiguration::class])
 @EnableConfigurationProperties(
     LoggingProperties::class,
     ResponseProperties::class,
