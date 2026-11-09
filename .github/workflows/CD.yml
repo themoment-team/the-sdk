@@ -1,9 +1,16 @@
 name: CD
 
 # GitHub에서 릴리즈(릴리즈 노트)를 게시하면 해당 태그 기준으로 Maven Central에 배포한다.
+# Actions 탭의 Run workflow로 이미 있는 태그를 지정해 수동으로 배포할 수도 있다.
 on:
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '배포할 태그 (예: 2.0). master에 포함된 커밋이어야 하고 build.gradle.kts의 version과 같아야 한다.'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -11,7 +18,8 @@ permissions:
 jobs:
   build-and-publish:
     # Maven Central은 공개한 버전을 되돌릴 수 없다. pre-release로 버전 좌표가 소진되지 않도록 막는다.
-    if: github.event.release.prerelease == false
+    # 수동 실행은 실행한 사람이 태그를 직접 지정하므로 이 조건을 적용하지 않는다.
+    if: github.event_name == 'workflow_dispatch' || github.event.release.prerelease == false
     # 릴리즈가 겹쳐 게시돼도 배포는 한 번에 하나씩 진행한다.
     concurrency:
       group: maven-central-publish
@@ -19,12 +27,16 @@ jobs:
     # Settings > Environments에서 승인자·배포 브랜치 보호를 걸면 시크릿 노출 전에 그 규칙이 적용된다.
     environment: maven-central
     runs-on: ubuntu-latest
+    env:
+      # 릴리즈 이벤트면 릴리즈 태그, 수동 실행이면 입력한 태그를 사용한다.
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.release.tag_name }}
+          # 같은 이름의 브랜치가 아니라 태그를 체크아웃하도록 refs/tags/를 붙인다.
+          ref: refs/tags/${{ env.TAG }}
           fetch-depth: 0
 
       # 임의 브랜치의 커밋에 태그를 붙여 빌드 스크립트로 시크릿을 빼낼 수 없도록, master에 머지된 커밋만 배포한다.
@@ -32,7 +44,7 @@ jobs:
       - name: Check tag commit is on master
         run: |
           if ! git merge-base --is-ancestor HEAD origin/master; then
-            echo "::error::릴리즈 태그가 master에 포함되지 않은 커밋을 가리킵니다."
+            echo "::error::태그 $TAG가 master에 포함되지 않은 커밋을 가리킵니다."
             exit 1
           fi
 
@@ -65,12 +77,10 @@ jobs:
 
       # 태그(예: 2.0 또는 v2.0)와 build.gradle.kts의 version이 다르면 잘못된 버전이 배포되므로 막는다
       - name: Check tag matches project version
-        env:
-          TAG: ${{ github.event.release.tag_name }}
         run: |
           VERSION=$(./gradlew properties -q | awk '/^version:/ {print $2}')
           if [ "${TAG#v}" != "$VERSION" ]; then
-            echo "::error::릴리즈 태그($TAG)와 build.gradle.kts 버전($VERSION)이 다릅니다."
+            echo "::error::태그($TAG)와 build.gradle.kts 버전($VERSION)이 다릅니다."
             exit 1
           fi
 
