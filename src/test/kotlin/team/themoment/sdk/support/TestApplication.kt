@@ -8,7 +8,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.util.MultiValueMap
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
@@ -108,4 +110,9 @@ class SampleController {
 
     @GetMapping("/v1/not-found")
     fun notFound(): SampleBody = throw ExpectedException(HttpStatus.NOT_FOUND.reasonPhrase, HttpStatus.NOT_FOUND)
+
+    @PostMapping("/v1/form")
+    fun form(
+        @RequestParam params: MultiValueMap<String, String>,
+    ): Map<String, List<String>> = params.toMap()
 }
