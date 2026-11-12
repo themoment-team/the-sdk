@@ -5,14 +5,20 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.media.SchemaProperty
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.util.MultiValueMap
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestMethod
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.util.WebUtils
 import team.themoment.sdk.exception.ExpectedException
+import team.themoment.sdk.logging.CachedRequestBodyWrapper
 import team.themoment.sdk.response.CommonApiResponse
 
 @SpringBootApplication
@@ -20,6 +26,11 @@ class TestApplication
 
 data class SampleBody(
     val name: String,
+)
+
+data class FormResult(
+    val params: Map<String, List<String>>,
+    val bodyCached: Boolean,
 )
 
 @Schema(name = "CommonApiResponseDto")
@@ -108,4 +119,14 @@ class SampleController {
 
     @GetMapping("/v1/not-found")
     fun notFound(): SampleBody = throw ExpectedException(HttpStatus.NOT_FOUND.reasonPhrase, HttpStatus.NOT_FOUND)
+
+    @RequestMapping("/v1/form", method = [RequestMethod.POST, RequestMethod.PUT])
+    fun form(
+        @RequestParam params: MultiValueMap<String, String>,
+        request: HttpServletRequest,
+    ): FormResult =
+        FormResult(
+            params = params.toMap(),
+            bodyCached = WebUtils.getNativeRequest(request, CachedRequestBodyWrapper::class.java) != null,
+        )
 }

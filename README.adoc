@@ -50,7 +50,7 @@ dependencies {
     implementation(platform(org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES))
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("tools.jackson.module:jackson-module-kotlin")
-    implementation("io.github.themoment-team:the-sdk:2.0")
+    implementation("io.github.themoment-team:the-sdk:2.0.1")
 }
 ----
 
@@ -67,7 +67,7 @@ repositories {
 }
 
 dependencies {
-    implementation("io.github.themoment-team:the-sdk:2.0")
+    implementation("io.github.themoment-team:the-sdk:2.0.1")
 }
 ----
 
@@ -112,6 +112,8 @@ sdk:
 === 로깅 필터 (sdk.logging)
 
 SDK를 추가하면 모든 HTTP 요청과 응답에 구조화된 로그가 자동으로 기록됩니다. 각 요청/응답 쌍은 동일한 UUID(`Log-ID`)로 연결되어 추적이 가능합니다.
+
+NOTE: 로깅을 위해 요청 본문을 먼저 읽으므로, `application/x-www-form-urlencoded` POST 요청의 파라미터는 서블릿 컨테이너 대신 SDK가 캐시한 본문에서 복원합니다. 이때 컨테이너의 `maxPostSize`, `maxParameterCount` 제한은 적용되지 않고, 잘못 인코딩된 파라미터는 건너뜁니다(DEBUG 로그에 이름만 남깁니다). 큰 form 본문을 받거나 비밀 정보가 담긴 엔드포인트(예: OAuth token)는 `not-logging-urls`에 추가하는 것을 권장합니다.
 
 ==== 요청 로그 포맷
 
