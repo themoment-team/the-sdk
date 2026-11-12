@@ -4,6 +4,7 @@ import jakarta.servlet.ReadListener
 import jakarta.servlet.ServletInputStream
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletRequestWrapper
+import org.slf4j.LoggerFactory
 import org.springframework.util.StreamUtils
 import java.io.BufferedReader
 import java.io.ByteArrayInputStream
@@ -43,11 +44,12 @@ class CachedRequestBodyWrapper
 
         override fun getParameter(name: String): String? = parameters[name]?.firstOrNull()
 
-        override fun getParameterMap(): Map<String, Array<String>> = parameters
+        // 컨테이너처럼 호출자가 받은 배열을 고쳐도 캐시가 오염되지 않도록 복사해서 넘긴다.
+        override fun getParameterMap(): Map<String, Array<String>> = Collections.unmodifiableMap(parameters.mapValues { it.value.clone() })
 
         override fun getParameterNames(): Enumeration<String> = Collections.enumeration(parameters.keys)
 
-        override fun getParameterValues(name: String): Array<String>? = parameters[name]
+        override fun getParameterValues(name: String): Array<String>? = parameters[name]?.clone()
 
         private fun bodyCharset(): Charset = characterEncoding?.let { Charset.forName(it) } ?: StandardCharsets.UTF_8
 
@@ -86,11 +88,14 @@ class CachedRequestBodyWrapper
             return try {
                 URLDecoder.decode(rawName, charset) to URLDecoder.decode(rawValue, charset)
             } catch (e: IllegalArgumentException) {
+                // 값에는 비밀 정보가 있을 수 있으므로 이름만 남긴다.
+                logger.debug("Skipped form parameter with malformed encoding named {}", rawName)
                 null
             }
         }
 
         private companion object {
+            private val logger = LoggerFactory.getLogger(CachedRequestBodyWrapper::class.java)
             const val FORM_CONTENT_TYPE = "application/x-www-form-urlencoded"
         }
     }
